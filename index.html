@@ -1,1 +1,548 @@
 
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>第１回コスプレイベント『天気の子』</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Serif+JP:wght@200;300;400;500;700&family=Cormorant+Garamond:wght@300;400&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --ink:#f4f6fb;
+    --ink-soft:rgba(244,246,251,.72);
+    --ink-faint:rgba(244,246,251,.32);
+    --bg:#000;
+    --rain-tint:#0c1018;
+    --warm:#d9b88a;
+    --serif:'Noto Serif JP', 'Hiragino Mincho ProN', 'YuMincho', serif;
+    --latin:'Cormorant Garamond', serif;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  html,body{height:100%;width:100%;overflow:hidden;background:var(--bg);color:var(--ink);font-family:var(--serif);-webkit-tap-highlight-color:transparent;cursor:default}
+  body{position:relative;user-select:none}
+
+  /* ---------- background video ---------- */
+  .bg-video{
+    position:fixed;inset:0;width:100%;height:100%;
+    object-fit:cover;z-index:0;
+    opacity:0;transition:opacity 3.5s ease;
+    filter:saturate(.85) contrast(1.05) brightness(.55);
+  }
+  .bg-video.show{opacity:1}
+
+  /* css fallback rain-tinted gradient when no video */
+  .bg-fallback{
+    position:fixed;inset:0;z-index:0;
+    background:
+      radial-gradient(ellipse at 30% 20%, rgba(60,80,110,.35), transparent 55%),
+      radial-gradient(ellipse at 75% 80%, rgba(40,55,80,.45), transparent 60%),
+      linear-gradient(180deg, #050709 0%, #0a0e15 50%, #060810 100%);
+    opacity:0;transition:opacity 3.5s ease;
+  }
+  .bg-fallback.show{opacity:1}
+
+  /* ---------- vignette + grain ---------- */
+  .vignette{
+    position:fixed;inset:0;z-index:5;pointer-events:none;
+    background:radial-gradient(ellipse at center, transparent 35%, rgba(0,0,0,.55) 85%, rgba(0,0,0,.85) 100%);
+  }
+  .grain{
+    position:fixed;inset:-50%;z-index:6;pointer-events:none;opacity:.06;mix-blend-mode:overlay;
+    background-image:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='200' height='200'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='2' stitchTiles='stitch'/></filter><rect width='100%25' height='100%25' filter='url(%23n)' opacity='.6'/></svg>");
+    animation:grain 6s steps(6) infinite;
+  }
+  @keyframes grain{
+    0%{transform:translate(0,0)} 20%{transform:translate(-3%,2%)}
+    40%{transform:translate(2%,-3%)} 60%{transform:translate(-2%,1%)}
+    80%{transform:translate(3%,-1%)} 100%{transform:translate(0,0)}
+  }
+
+  /* ---------- rain particles canvas ---------- */
+  #rain-canvas{position:fixed;inset:0;z-index:3;pointer-events:none;opacity:0;transition:opacity 3s ease}
+  #rain-canvas.show{opacity:.55}
+
+  /* ---------- title screen ---------- */
+  .stage{position:fixed;inset:0;z-index:10;display:flex;align-items:center;justify-content:center;flex-direction:column;transition:opacity 1.8s ease, transform 1.8s ease}
+
+  .title-wrap{
+    text-align:center;color:var(--ink);
+    opacity:0;transform:translateY(8px);
+    transition:opacity 2.4s cubic-bezier(.2,.6,.2,1), transform 2.4s cubic-bezier(.2,.6,.2,1);
+  }
+  .title-wrap.in{opacity:1;transform:translateY(0)}
+  .title-wrap.out{opacity:0;transform:translateY(-6px);transition:opacity 1.6s ease, transform 1.6s ease}
+
+  .t-overline{
+    font-family:var(--latin);font-weight:300;font-size:11px;letter-spacing:.55em;
+    color:var(--ink-faint);text-transform:uppercase;margin-bottom:28px;
+    opacity:0;animation:fadeUp 2.6s .3s ease forwards;
+  }
+  .t-row1{
+    font-weight:300;font-size:clamp(13px,2.2vw,17px);letter-spacing:.4em;
+    color:var(--ink-soft);margin-bottom:22px;
+    opacity:0;animation:fadeUp 2.6s .8s ease forwards;
+  }
+  .t-divider{
+    width:0;height:1px;background:var(--ink-faint);margin:0 auto 26px;
+    animation:lineGrow 2.2s 1.2s cubic-bezier(.2,.6,.2,1) forwards;
+  }
+  .t-main{
+    font-weight:400;font-size:clamp(34px,6vw,64px);letter-spacing:.18em;
+    color:var(--ink);text-shadow:0 0 28px rgba(180,200,230,.18);
+    opacity:0;animation:fadeUp 2.8s 1.5s ease forwards;
+  }
+  .t-sub{
+    margin-top:18px;font-weight:200;font-size:clamp(10px,1.2vw,12px);letter-spacing:.6em;
+    color:var(--ink-faint);
+    opacity:0;animation:fadeUp 2.6s 2.2s ease forwards;
+  }
+  .t-date{
+    font-family:var(--latin);font-weight:300;font-size:11px;letter-spacing:.5em;
+    color:var(--ink-faint);margin-top:46px;
+    opacity:0;animation:fadeUp 2.6s 2.8s ease forwards;
+  }
+
+  .tap-hint{
+    position:fixed;bottom:7vh;left:0;right:0;text-align:center;z-index:11;
+    font-family:var(--latin);font-weight:300;font-size:10px;letter-spacing:.7em;
+    color:var(--ink-faint);text-transform:uppercase;
+    opacity:0;animation:hintPulse 2.8s 3.6s infinite ease-in-out;
+  }
+  .tap-hint.out{animation:none;opacity:0;transition:opacity .8s ease}
+
+  @keyframes fadeUp{to{opacity:1;transform:translateY(0)}}
+  @keyframes lineGrow{to{width:120px}}
+  @keyframes hintPulse{
+    0%,100%{opacity:.18}
+    50%{opacity:.55}
+  }
+
+  /* ---------- menu ---------- */
+  .menu{
+    position:fixed;left:7vw;top:50%;transform:translateY(-50%);
+    z-index:12;display:flex;flex-direction:column;gap:6vh;
+    opacity:0;transition:opacity 2s ease;pointer-events:none;
+  }
+  .menu.in{opacity:1;pointer-events:auto}
+
+  .mission{
+    position:relative;display:flex;flex-direction:column;align-items:center;
+    cursor:pointer;
+    opacity:0;transform:translateX(-12px);
+    transition:transform .8s ease, opacity 1.4s ease;
+  }
+  .menu.in .mission{opacity:1;transform:translateX(0)}
+  .menu.in .mission:nth-child(1){transition-delay:.2s}
+  .menu.in .mission:nth-child(2){transition-delay:.55s}
+  .menu.in .mission:nth-child(3){transition-delay:.9s}
+
+  .mission .label{
+    font-family:var(--serif);font-weight:300;font-size:15px;letter-spacing:.55em;
+    color:var(--ink);
+    text-shadow:0 0 18px rgba(0,0,0,.7), 0 0 32px rgba(160,180,210,.15);
+    margin-bottom:14px;padding-left:.55em;
+    transition:letter-spacing .6s ease, color .4s ease, text-shadow .4s ease;
+  }
+  .mission:hover .label{
+    letter-spacing:.7em;
+    color:#fff;
+    text-shadow:0 0 22px rgba(0,0,0,.7), 0 0 28px rgba(217,184,138,.45);
+  }
+
+  .teru-frame{
+    position:relative;width:74px;height:104px;
+    display:flex;align-items:center;justify-content:center;
+  }
+  .teru-img{
+    width:100%;height:100%;object-fit:contain;
+    filter:drop-shadow(0 8px 16px rgba(0,0,0,.55)) drop-shadow(0 0 22px rgba(180,200,230,.12));
+    animation:sway 6s ease-in-out infinite;
+    transition:filter .4s ease, transform .4s ease;
+  }
+  .mission:nth-child(2) .teru-img{animation-delay:-2s;animation-duration:7s}
+  .mission:nth-child(3) .teru-img{animation-delay:-4s;animation-duration:6.5s}
+
+  .mission:hover .teru-img{
+    filter:drop-shadow(0 10px 20px rgba(0,0,0,.6)) drop-shadow(0 0 28px rgba(217,184,138,.35));
+  }
+
+  /* string above teru */
+  .teru-string{
+    position:absolute;top:-22px;left:50%;width:1px;height:22px;
+    background:linear-gradient(to bottom, transparent, rgba(244,246,251,.25));
+  }
+
+  @keyframes sway{
+    0%,100%{transform:rotate(-1.2deg) translateY(0)}
+    50%{transform:rotate(1.2deg) translateY(-3px)}
+  }
+
+  /* ripple */
+  .ripple{
+    position:absolute;left:50%;top:50%;width:0;height:0;
+    border:1.5px solid rgba(244,246,251,.85);border-radius:50%;
+    transform:translate(-50%,-50%);pointer-events:none;
+    animation:rippleExpand 1.6s cubic-bezier(.2,.6,.2,1) forwards;
+  }
+  .ripple.r2{animation-delay:.18s;border-color:rgba(217,184,138,.55)}
+  .ripple.r3{animation-delay:.36s;border-color:rgba(244,246,251,.4)}
+  @keyframes rippleExpand{
+    0%{width:0;height:0;opacity:.95;border-width:2px}
+    60%{opacity:.5}
+    100%{width:380px;height:380px;opacity:0;border-width:.4px}
+  }
+
+  /* selected state */
+  .mission.firing .teru-img{transform:scale(.96);transition:transform .3s ease}
+  .mission.firing .label{color:#fff;letter-spacing:.7em}
+
+  /* ---------- corner marks (movie poster feel) ---------- */
+  .corner{
+    position:fixed;z-index:11;font-family:var(--latin);font-weight:300;
+    font-size:10px;letter-spacing:.4em;color:var(--ink-faint);
+    text-transform:uppercase;opacity:0;transition:opacity 2s 1s ease;
+    pointer-events:none;
+  }
+  .corner.in{opacity:1}
+  .corner.tl{top:28px;left:28px}
+  .corner.tr{top:28px;right:28px;text-align:right}
+  .corner.bl{bottom:28px;left:28px}
+  .corner.br{bottom:28px;right:28px;text-align:right}
+  .corner .dot{display:inline-block;width:4px;height:4px;background:var(--ink-faint);border-radius:50%;vertical-align:middle;margin:0 8px}
+
+  /* ---------- mission destination screen ---------- */
+  .scene{
+    position:fixed;inset:0;z-index:30;background:rgba(0,0,0,.0);
+    display:flex;align-items:center;justify-content:center;flex-direction:column;
+    pointer-events:none;opacity:0;transition:opacity 1.6s ease, background 1.6s ease;
+  }
+  .scene.in{opacity:1;pointer-events:auto;background:rgba(0,0,0,.78)}
+  .scene-name{
+    font-family:var(--serif);font-weight:300;font-size:clamp(36px,5vw,56px);
+    letter-spacing:.45em;color:var(--ink);
+    text-shadow:0 0 30px rgba(180,200,230,.2);
+    transform:translateY(10px);opacity:0;transition:all 1.6s .3s ease;
+  }
+  .scene.in .scene-name{transform:translateY(0);opacity:1}
+  .scene-mark{
+    font-family:var(--latin);font-weight:300;font-size:10px;letter-spacing:.6em;
+    color:var(--ink-faint);text-transform:uppercase;margin-top:24px;
+    opacity:0;transition:opacity 1.6s .9s ease;
+  }
+  .scene.in .scene-mark{opacity:1}
+  .scene-back{
+    position:absolute;top:32px;left:32px;font-family:var(--latin);font-weight:300;
+    font-size:11px;letter-spacing:.4em;color:var(--ink-faint);
+    text-transform:uppercase;cursor:pointer;padding:8px 12px;
+    transition:color .3s ease;opacity:0;transition:opacity 1.6s 1.1s ease, color .3s ease;
+  }
+  .scene.in .scene-back{opacity:1}
+  .scene-back:hover{color:var(--ink)}
+
+  /* mobile tweaks */
+  @media (max-width:640px){
+    .menu{left:6vw;gap:5vh}
+    .teru-frame{width:62px;height:88px}
+    .mission .label{font-size:12px;letter-spacing:.45em}
+    .corner{font-size:9px}
+    .corner.tl,.corner.tr{top:18px}
+    .corner.tl,.corner.bl{left:18px}
+    .corner.tr,.corner.br{right:18px}
+    .corner.bl,.corner.br{bottom:18px}
+  }
+</style>
+</head>
+<body>
+
+  <!-- gradient fallback first so video paints on top of it -->
+  <div class="bg-fallback" id="bgFallback"></div>
+  <video class="bg-video" id="bgVideo" muted loop playsinline preload="auto">
+    <source src="rain.mp4" type="video/mp4">
+  </video>
+
+  <!-- rain particle layer -->
+  <canvas id="rain-canvas"></canvas>
+
+  <!-- texture & vignette -->
+  <div class="grain"></div>
+  <div class="vignette"></div>
+
+  <!-- title screen -->
+  <div class="stage" id="stage">
+    <div class="title-wrap" id="titleWrap">
+      <div class="t-overline">— invitation —</div>
+      <div class="t-row1">第 １ 回　コ ス プ レ イ ベ ン ト</div>
+      <div class="t-divider"></div>
+      <div class="t-main">『 天 気 の 子 』</div>
+      <div class="t-sub">非 公 式</div>
+      <div class="t-date">A R A I S H I I  ·  ２０２６</div>
+    </div>
+  </div>
+  <div class="tap-hint" id="tapHint">tap to begin</div>
+
+  <!-- corner marks -->
+  <div class="corner tl" id="cornerTL">N <span class="dot"></span> 35.6895</div>
+  <div class="corner tr" id="cornerTR">E <span class="dot"></span> 139.6917</div>
+  <div class="corner bl" id="cornerBL">vol <span class="dot"></span> 01</div>
+  <div class="corner br" id="cornerBR">rain <span class="dot"></span> on</div>
+
+  <!-- main menu -->
+  <div class="menu" id="menu">
+    <div class="mission" data-name="チャーハン" data-key="chahan">
+      <div class="label">チャーハン</div>
+      <div class="teru-frame">
+        <span class="teru-string"></span>
+        <img class="teru-img" src="teru1.png" alt="" data-fallback="1">
+      </div>
+    </div>
+    <div class="mission" data-name="天気" data-key="tenki">
+      <div class="label">天　気</div>
+      <div class="teru-frame">
+        <span class="teru-string"></span>
+        <img class="teru-img" src="teru2.png" alt="" data-fallback="2">
+      </div>
+    </div>
+    <div class="mission" data-name="フォト" data-key="photo">
+      <div class="label">フォト</div>
+      <div class="teru-frame">
+        <span class="teru-string"></span>
+        <img class="teru-img" src="teru3.png" alt="" data-fallback="3">
+      </div>
+    </div>
+  </div>
+
+  <!-- mission destination scene -->
+  <div class="scene" id="scene">
+    <div class="scene-name" id="sceneName">　</div>
+    <div class="scene-mark">— mission —</div>
+    <div class="scene-back" id="sceneBack">← back</div>
+  </div>
+
+  <!-- audio -->
+  <audio id="rainAudio" loop preload="auto">
+    <source src="rain.mp3" type="audio/mpeg">
+  </audio>
+  <audio id="clickAudio" preload="auto">
+    <source src="rain1.mp3" type="audio/mpeg">
+  </audio>
+
+<script>
+(()=>{
+  // ---------- state ----------
+  const State = { LOADING:'loading', TITLE:'title', TRANS:'trans', MENU:'menu', SCENE:'scene' };
+  let state = State.LOADING;
+
+  const $ = (id)=>document.getElementById(id);
+  const titleWrap = $('titleWrap');
+  const tapHint = $('tapHint');
+  const stage = $('stage');
+  const menu = $('menu');
+  const bgVideo = $('bgVideo');
+  const bgFallback = $('bgFallback');
+  const rainAudio = $('rainAudio');
+  const clickAudio = $('clickAudio');
+  const scene = $('scene');
+  const sceneName = $('sceneName');
+  const sceneBack = $('sceneBack');
+  const corners = ['cornerTL','cornerTR','cornerBL','cornerBR'].map($);
+
+  // ---------- title fade-in ----------
+  window.addEventListener('load', ()=>{
+    setTimeout(()=>{
+      titleWrap.classList.add('in');
+      state = State.TITLE;
+    }, 700);
+  });
+
+  // ---------- teru fallback (if user images missing) ----------
+  document.querySelectorAll('.teru-img').forEach(img=>{
+    img.addEventListener('error', ()=>{
+      const i = img.dataset.fallback;
+      const svg = teruSVG(i);
+      img.outerHTML = svg;
+    });
+  });
+
+  function teruSVG(variant){
+    // three subtly different teru-teru-bozu drawn inline
+    const eyes = {
+      '1':'<path d="M40,46 Q42,49 44,46" stroke="rgba(40,50,65,.7)" fill="none" stroke-width="1.2" stroke-linecap="round"/><path d="M56,46 Q58,49 60,46" stroke="rgba(40,50,65,.7)" fill="none" stroke-width="1.2" stroke-linecap="round"/>',
+      '2':'<circle cx="42" cy="47" r="1.2" fill="rgba(40,50,65,.75)"/><circle cx="58" cy="47" r="1.2" fill="rgba(40,50,65,.75)"/><path d="M46,54 Q50,57 54,54" stroke="rgba(40,50,65,.6)" fill="none" stroke-width="1" stroke-linecap="round"/>',
+      '3':'<path d="M40,47 L44,47" stroke="rgba(40,50,65,.7)" stroke-width="1.2" stroke-linecap="round"/><path d="M56,47 L60,47" stroke="rgba(40,50,65,.7)" stroke-width="1.2" stroke-linecap="round"/>'
+    };
+    return `<svg class="teru-img" viewBox="0 0 100 140" xmlns="http://www.w3.org/2000/svg" style="width:100%;height:100%;">
+      <defs>
+        <radialGradient id="tg${variant}" cx="50%" cy="35%" r="60%">
+          <stop offset="0%" stop-color="rgba(255,255,255,.98)"/>
+          <stop offset="60%" stop-color="rgba(232,238,246,.85)"/>
+          <stop offset="100%" stop-color="rgba(195,210,228,.55)"/>
+        </radialGradient>
+      </defs>
+      <path d="M50,18 Q22,40 24,92 Q24,128 50,130 Q76,128 76,92 Q78,40 50,18 Z" fill="url(#tg${variant})"/>
+      <path d="M28,60 Q50,66 72,60" stroke="rgba(160,175,195,.55)" fill="none" stroke-width="1.2"/>
+      ${eyes[variant]}
+    </svg>`;
+  }
+
+  // hide the video element if source fails (lets fallback gradient show)
+  bgVideo.addEventListener('error', ()=>{ bgVideo.style.display = 'none'; });
+  const vidSrc = bgVideo.querySelector('source');
+  if(vidSrc) vidSrc.addEventListener('error', ()=>{ bgVideo.style.display = 'none'; });
+
+  // ---------- start experience on tap ----------
+  function start(){
+    if(state !== State.TITLE) return;
+    state = State.TRANS;
+
+    // hide title + hint
+    titleWrap.classList.remove('in');
+    titleWrap.classList.add('out');
+    tapHint.classList.add('out');
+
+    // bring up rain visuals
+    bgVideo.classList.add('show');
+    bgFallback.classList.add('show');
+    document.getElementById('rain-canvas').classList.add('show');
+
+    // attempt video play
+    bgVideo.play().catch(()=>{});
+
+    // start audio + fade volume from 0
+    try{
+      rainAudio.volume = 0;
+      rainAudio.play().then(()=>fadeVolume(rainAudio, 0, 0.65, 4500))
+        .catch(()=>{/* silent if no file */});
+    }catch(e){}
+
+    // reveal corner marks subtly
+    setTimeout(()=>corners.forEach(c=>c && c.classList.add('in')), 1200);
+
+    // reveal menu after the rain has settled in
+    setTimeout(()=>{
+      menu.classList.add('in');
+      state = State.MENU;
+    }, 2200);
+  }
+
+  function fadeVolume(audio, from, to, duration){
+    const t0 = performance.now();
+    function step(now){
+      const t = Math.min(1, (now - t0)/duration);
+      // ease-in-out
+      const e = t<.5 ? 2*t*t : 1 - Math.pow(-2*t+2,2)/2;
+      audio.volume = from + (to-from)*e;
+      if(t<1) requestAnimationFrame(step);
+    }
+    requestAnimationFrame(step);
+  }
+
+  // listen for first interaction anywhere
+  ['click','touchstart','keydown'].forEach(ev=>{
+    window.addEventListener(ev, start, {once:false, passive:true});
+  });
+
+  // ---------- ripple on missions ----------
+  document.querySelectorAll('.mission').forEach(m=>{
+    m.addEventListener('click', (e)=>{
+      if(state !== State.MENU) return;
+      e.stopPropagation();
+      m.classList.add('firing');
+
+      // 3 staggered ripples centered on the teru
+      const frame = m.querySelector('.teru-frame');
+      const r1 = makeRipple();
+      const r2 = makeRipple('r2');
+      const r3 = makeRipple('r3');
+      frame.appendChild(r1); frame.appendChild(r2); frame.appendChild(r3);
+      setTimeout(()=>{r1.remove();r2.remove();r3.remove();}, 2200);
+
+      // play click sfx
+      try{
+        clickAudio.currentTime = 0;
+        clickAudio.volume = 0.85;
+        clickAudio.play().catch(()=>{});
+      }catch(e){}
+
+      // transition to mission scene
+      const name = m.dataset.name;
+      setTimeout(()=>openScene(name), 700);
+      setTimeout(()=>m.classList.remove('firing'), 900);
+    });
+  });
+
+  function makeRipple(extraClass){
+    const d = document.createElement('div');
+    d.className = 'ripple' + (extraClass ? ' '+extraClass : '');
+    return d;
+  }
+
+  // ---------- mission scene ----------
+  function openScene(name){
+    state = State.SCENE;
+    sceneName.textContent = name;
+    scene.classList.add('in');
+    menu.style.opacity = '.15';
+  }
+  sceneBack.addEventListener('click', (e)=>{
+    e.stopPropagation();
+    scene.classList.remove('in');
+    menu.style.opacity = '';
+    setTimeout(()=>{ state = State.MENU; }, 800);
+  });
+
+  // ---------- rain particle canvas ----------
+  const canvas = document.getElementById('rain-canvas');
+  const ctx = canvas.getContext('2d');
+  let drops = [];
+
+  function resize(){
+    canvas.width = innerWidth * devicePixelRatio;
+    canvas.height = innerHeight * devicePixelRatio;
+    canvas.style.width = innerWidth+'px';
+    canvas.style.height = innerHeight+'px';
+    ctx.scale(devicePixelRatio, devicePixelRatio);
+    initDrops();
+  }
+  function initDrops(){
+    const count = Math.floor(innerWidth/8);
+    drops = [];
+    for(let i=0;i<count;i++){
+      drops.push({
+        x: Math.random()*innerWidth,
+        y: Math.random()*innerHeight,
+        len: 8 + Math.random()*18,
+        speed: 6 + Math.random()*10,
+        opacity: .12 + Math.random()*.35,
+        slant: -1 - Math.random()*1.2
+      });
+    }
+  }
+  function drawRain(){
+    ctx.clearRect(0,0,canvas.width,canvas.height);
+    ctx.lineWidth = 1;
+    ctx.lineCap = 'round';
+    drops.forEach(d=>{
+      ctx.strokeStyle = `rgba(210,225,245,${d.opacity})`;
+      ctx.beginPath();
+      ctx.moveTo(d.x, d.y);
+      ctx.lineTo(d.x + d.slant, d.y + d.len);
+      ctx.stroke();
+      d.y += d.speed;
+      d.x += d.slant * .15;
+      if(d.y > innerHeight){
+        d.y = -d.len;
+        d.x = Math.random()*innerWidth;
+      }
+    });
+    requestAnimationFrame(drawRain);
+  }
+  window.addEventListener('resize', resize);
+  resize();
+  drawRain();
+
+})();
+</script>
+</body>
+</html>
