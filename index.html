@@ -61,6 +61,28 @@
   #rain-canvas{position:fixed;inset:0;z-index:3;pointer-events:none;opacity:0;transition:opacity 3s ease}
   #rain-canvas.show{opacity:1}
 
+  /* ---------- top-left credit (always visible) ---------- */
+  .credit{
+    position:fixed;left:22px;top:20px;z-index:11;
+    display:flex;flex-direction:column;gap:4px;line-height:1.4;
+    pointer-events:none;
+  }
+  .credit .c-line{display:flex;align-items:baseline;gap:8px}
+  .credit .c-key{
+    font-family:var(--latin);font-weight:300;font-size:8.5px;letter-spacing:.4em;
+    text-transform:uppercase;color:rgba(244,246,251,.28);
+  }
+  .credit .c-val{
+    font-family:var(--serif);font-weight:300;font-size:10px;letter-spacing:.22em;
+    color:rgba(244,246,251,.55);
+    text-shadow:0 0 10px rgba(0,0,0,.85);
+  }
+  @media (max-width:640px){
+    .credit{left:14px;top:14px}
+    .credit .c-key{font-size:7.5px}
+    .credit .c-val{font-size:9px;letter-spacing:.18em}
+  }
+
   /* ---------- title screen ---------- */
   .stage{position:fixed;inset:0;z-index:10;display:flex;align-items:center;justify-content:center;flex-direction:column;transition:opacity 1.8s ease}
 
@@ -92,9 +114,14 @@
     opacity:0;animation:fadeUp 2.8s 1.5s ease forwards;
   }
   .t-sub{
-    margin-top:18px;font-weight:200;font-size:clamp(10px,1.2vw,12px);letter-spacing:.6em;
-    color:var(--ink-faint);
+    margin-top:22px;font-weight:300;font-size:clamp(13px,1.6vw,16px);letter-spacing:.5em;
+    color:var(--ink-soft);
+    display:inline-flex;align-items:center;justify-content:center;gap:14px;
     opacity:0;animation:fadeUp 2.6s 2.2s ease forwards;
+  }
+  .t-sub::before, .t-sub::after{
+    content:'';display:inline-block;width:22px;height:1px;
+    background:linear-gradient(to right, transparent, rgba(244,246,251,.5), transparent);
   }
   .t-date{
     font-family:var(--latin);font-weight:300;font-size:11px;letter-spacing:.5em;
@@ -380,6 +407,12 @@
   <div class="grain"></div>
   <div class="vignette"></div>
 
+  <!-- top-left credit (always visible) -->
+  <div class="credit" aria-hidden="true">
+    <div class="c-line"><span class="c-key">image</span><span class="c-val">背景画像元『gogh』</span></div>
+    <div class="c-line"><span class="c-key">work</span><span class="c-val">作品元『天気の子』</span></div>
+  </div>
+
   <!-- title screen -->
   <div class="stage" id="stage">
     <div class="title-wrap" id="titleWrap">
@@ -455,6 +488,11 @@
   <!-- hidden YouTube audio host -->
   <div id="yt-audio-host"><div id="yt-audio-player"></div></div>
 
+  <!-- ambient rain.mp3 (plays alongside YouTube audio + click sfx, all independent) -->
+  <audio id="rainAudio" loop preload="auto">
+    <source src="rain.mp3" type="audio/mpeg">
+  </audio>
+
   <!-- click sfx (rain1.mp3) -->
   <audio id="clickAudio" preload="auto">
     <source src="rain1.mp3" type="audio/mpeg">
@@ -471,6 +509,7 @@
   const menu = $('menu');
   const bgVideo = $('bgVideo');
   const bgFallback = $('bgFallback');
+  const rainAudio = $('rainAudio');
   const clickAudio = $('clickAudio');
   const scene = $('scene');
   const sceneName = $('sceneName');
@@ -577,6 +616,19 @@
     requestAnimationFrame(step);
   }
 
+  // generic fade for HTML <audio> elements (volume 0..1)
+  function fadeAudioVolume(audio, target, duration){
+    const start = performance.now();
+    const from = audio.volume || 0;
+    function step(now){
+      const t = Math.min(1,(now-start)/duration);
+      const e = t<.5 ? 2*t*t : 1 - Math.pow(-2*t+2,2)/2;
+      audio.volume = Math.max(0, Math.min(1, from + (target - from) * e));
+      if(t<1) requestAnimationFrame(step);
+    }
+    requestAnimationFrame(step);
+  }
+
   // ---------- start experience on first tap ----------
   let started = false;
   function start(){
@@ -594,8 +646,26 @@
     document.getElementById('rain-canvas').classList.add('show');
     rainActive = true;
 
-    bgVideo.play().catch(()=>{});
+    // robust video play (muted autoplay, retry a few times)
+    bgVideo.muted = true;
+    bgVideo.playsInline = true;
+    const playV = (n=0)=>{
+      if(n>4) return;
+      const p = bgVideo.play();
+      if(p && p.catch) p.catch(()=>setTimeout(()=>playV(n+1), 600));
+    };
+    playV();
 
+    // ambient rain.mp3 — plays alongside YouTube audio (each <audio>/iframe is independent)
+    try{
+      rainAudio.volume = 0;
+      const pr = rainAudio.play();
+      if(pr && pr.then){
+        pr.then(()=>fadeAudioVolume(rainAudio, 0.55, 5000)).catch(()=>{});
+      }
+    }catch(err){}
+
+    // YouTube audio loop — independent stream, plays simultaneously with rain.mp3
     const tryPlayYT = ()=>{
       if(!ytPlayer || !ytReady){
         setTimeout(tryPlayYT, 300);
@@ -699,18 +769,18 @@
     if(e.key === 'Escape' && honkeModal.classList.contains('in')) closeHonke();
   });
 
-  // ---------- realistic layered rain ----------
+  // ---------- subtle layered rain (atmospheric, doesn't fight the video) ----------
   const canvas = document.getElementById('rain-canvas');
   const ctx = canvas.getContext('2d');
   let W = 0, H = 0, dpr = 1;
   let rainActive = false;
   let drops = [];
 
-  // three layers: far → near. Near layer is fast, long, bright (the streaks)
+  // three layers: far → near. Lighter density + lower opacity than before.
   const LAYERS = [
-    { share:.30, sMin: 9,  sMax: 16, lMin: 6,  lMax: 16, oMin:.10, oMax:.22, wMin:.5, wMax:.8, slMin:-.4, slMax:-1.0 },
-    { share:.40, sMin: 22, sMax: 38, lMin: 18, lMax: 42, oMin:.22, oMax:.45, wMin:.7, wMax:1.1, slMin:-.7, slMax:-1.6 },
-    { share:.30, sMin: 45, sMax: 95, lMin: 45, lMax: 110, oMin:.50, oMax:.95, wMin:1.0, wMax:1.7, slMin:-1.0, slMax:-2.4 },
+    { share:.30, sMin: 9,  sMax: 15, lMin: 5,  lMax: 13, oMin:.05, oMax:.12, wMin:.5, wMax:.7, slMin:-.4, slMax:-.9 },
+    { share:.40, sMin: 20, sMax: 34, lMin: 14, lMax: 30, oMin:.10, oMax:.22, wMin:.6, wMax:.9, slMin:-.7, slMax:-1.4 },
+    { share:.30, sMin: 42, sMax: 80, lMin: 30, lMax: 70, oMin:.22, oMax:.45, wMin:.9, wMax:1.3, slMin:-1.0, slMax:-2.0 },
   ];
 
   function rand(a,b){ return a + Math.random()*(b-a); }
@@ -731,8 +801,8 @@
   function initDrops(){
     drops = [];
     const area = W*H;
-    // density: a lot of drops to feel like real rain
-    const baseCount = Math.min(1200, Math.max(450, Math.floor(area/1700)));
+    // density: significantly thinner than before so the bg video stays visible
+    const baseCount = Math.min(420, Math.max(150, Math.floor(area/4800)));
     LAYERS.forEach(layer=>{
       const n = Math.floor(baseCount * layer.share);
       for(let i=0;i<n;i++) drops.push(makeDrop(layer));
@@ -751,17 +821,11 @@
     initDrops();
   }
 
-  // small splashes when fast drops hit the bottom area
-  const splashes = [];
-  function addSplash(x){
-    splashes.push({ x, y: H - rand(2,10), life: 0, max: rand(180, 320), r: rand(1,3) });
-  }
-
   function tick(){
     if(!rainActive){ requestAnimationFrame(tick); return; }
 
-    // mild motion-blur fade so streaks look like persistent flashes
-    ctx.fillStyle = 'rgba(0,0,0,0.20)';
+    // clear faster (bigger fade alpha) so streaks read as crisp flashes, not thick smears
+    ctx.fillStyle = 'rgba(0,0,0,0.32)';
     ctx.fillRect(0,0,W,H);
 
     ctx.lineCap = 'round';
@@ -769,9 +833,7 @@
     for(let i=0;i<drops.length;i++){
       const d = drops[i];
       ctx.lineWidth = d.width;
-      // bluish-white streak; near layer brighter
-      const blue = 248;
-      ctx.strokeStyle = `rgba(220,${blue},255,${d.opacity})`;
+      ctx.strokeStyle = `rgba(220,235,255,${d.opacity})`;
       ctx.beginPath();
       ctx.moveTo(d.x, d.y);
       ctx.lineTo(d.x + d.slant, d.y + d.len);
@@ -781,7 +843,6 @@
       d.y += d.speed;
 
       if(d.y > H){
-        if(d.layer === LAYERS[2] && Math.random() < .55) addSplash(d.x);
         d.y = -d.len - rand(0, 100);
         d.x = Math.random()*W;
         d.len = rand(d.layer.lMin, d.layer.lMax);
@@ -789,21 +850,6 @@
         d.opacity = rand(d.layer.oMin, d.layer.oMax);
         d.slant = rand(d.layer.slMin, d.layer.slMax);
       }
-    }
-
-    // splash ripples
-    for(let i=splashes.length-1;i>=0;i--){
-      const s = splashes[i];
-      s.life += 16;
-      const t = s.life / s.max;
-      if(t >= 1){ splashes.splice(i,1); continue; }
-      const alpha = (1-t)*0.45;
-      const radius = s.r + t*8;
-      ctx.beginPath();
-      ctx.arc(s.x, s.y, radius, 0, Math.PI*2);
-      ctx.strokeStyle = `rgba(220,235,255,${alpha})`;
-      ctx.lineWidth = 0.8;
-      ctx.stroke();
     }
 
     requestAnimationFrame(tick);
