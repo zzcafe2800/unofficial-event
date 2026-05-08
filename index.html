@@ -559,10 +559,10 @@
     </svg>`;
   }
 
-  // hide video element if source fails
-  bgVideo.addEventListener('error', ()=>{ bgVideo.style.display = 'none'; });
-  const vidSrc = bgVideo.querySelector('source');
-  if(vidSrc) vidSrc.addEventListener('error', ()=>{ bgVideo.style.display = 'none'; });
+  // The bg-fallback gradient sits behind the video element. If rain.mp4 fails to
+  // load, the video element stays transparent and the gradient shows through —
+  // so we deliberately do NOT hide the video on error. (Earlier hide-on-error
+  // logic could fire spuriously and make the playing video disappear.)
 
   // ---------- YouTube IFrame API for audio loop ----------
   let ytPlayer = null;
@@ -736,14 +736,29 @@
   });
 
   // ---------- 本家 modal ----------
-  let savedYTVol = 55;
+  // store ambient audio state when entering 本家 so we can fully restore on exit
+  let preHonkeState = null;
+
   honkeBtn.addEventListener('click', (e)=>{
     e.stopPropagation();
     if(state !== State.MENU) return;
 
+    // capture current state, then pause everything ambient so the trailer is
+    // the only thing playing
+    preHonkeState = {
+      rainPaused: rainAudio.paused,
+      rainVol: rainAudio.volume,
+      ytWasPlaying: false,
+      ytVol: 55
+    };
+    try{ if(!rainAudio.paused) rainAudio.pause(); }catch(err){}
     if(ytPlayer && ytReady){
-      try{ savedYTVol = ytPlayer.getVolume() || 55; }catch(err){}
-      ytFadeVolume(8, 600);
+      try{
+        preHonkeState.ytVol = ytPlayer.getVolume() || 55;
+        const ps = ytPlayer.getPlayerState();
+        preHonkeState.ytWasPlaying = (ps === 1); // YT.PlayerState.PLAYING
+        if(preHonkeState.ytWasPlaying) ytPlayer.pauseVideo();
+      }catch(err){}
     }
 
     // letterbox bars in
@@ -754,12 +769,31 @@
     honkeIframe.src = embed;
     honkeModal.classList.add('in');
   });
+
   function closeHonke(){
     honkeModal.classList.remove('in');
     lbarTop.classList.remove('in');
     lbarBot.classList.remove('in');
-    setTimeout(()=>{ honkeIframe.src = ''; }, 600);
-    if(ytPlayer && ytReady){ ytFadeVolume(savedYTVol, 900); }
+    // stop the trailer iframe so its audio doesn't bleed into the ambient mix
+    setTimeout(()=>{ honkeIframe.src = ''; }, 700);
+
+    // restore the ambient audio mix to exactly what it was before
+    if(preHonkeState){
+      try{
+        rainAudio.volume = preHonkeState.rainVol;
+        if(!preHonkeState.rainPaused){
+          const p = rainAudio.play();
+          if(p && p.catch) p.catch(()=>{});
+        }
+      }catch(err){}
+      if(ytPlayer && ytReady){
+        try{
+          ytPlayer.setVolume(preHonkeState.ytVol);
+          if(preHonkeState.ytWasPlaying) ytPlayer.playVideo();
+        }catch(err){}
+      }
+      preHonkeState = null;
+    }
   }
   honkeClose.addEventListener('click', (e)=>{ e.stopPropagation(); closeHonke(); });
   honkeModal.addEventListener('click', (e)=>{
