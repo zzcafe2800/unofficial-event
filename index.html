@@ -1,4 +1,3 @@
-
 <!DOCTYPE html>
 <html lang="ja">
 <head>
@@ -14,7 +13,6 @@
     --ink-soft:rgba(244,246,251,.72);
     --ink-faint:rgba(244,246,251,.32);
     --bg:#000;
-    --rain-tint:#0c1018;
     --warm:#d9b88a;
     --serif:'Noto Serif JP', 'Hiragino Mincho ProN', 'YuMincho', serif;
     --latin:'Cormorant Garamond', serif;
@@ -23,16 +21,7 @@
   html,body{height:100%;width:100%;overflow:hidden;background:var(--bg);color:var(--ink);font-family:var(--serif);-webkit-tap-highlight-color:transparent;cursor:default}
   body{position:relative;user-select:none}
 
-  /* ---------- background video ---------- */
-  .bg-video{
-    position:fixed;inset:0;width:100%;height:100%;
-    object-fit:cover;z-index:0;
-    opacity:0;transition:opacity 3.5s ease;
-    filter:saturate(.85) contrast(1.05) brightness(.55);
-  }
-  .bg-video.show{opacity:1}
-
-  /* css fallback rain-tinted gradient when no video */
+  /* ---------- background ---------- */
   .bg-fallback{
     position:fixed;inset:0;z-index:0;
     background:
@@ -42,6 +31,15 @@
     opacity:0;transition:opacity 3.5s ease;
   }
   .bg-fallback.show{opacity:1}
+
+  .bg-video{
+    position:fixed;inset:0;width:100%;height:100%;
+    object-fit:cover;z-index:1;
+    opacity:0;transition:opacity 3.5s ease;
+    filter:saturate(.85) contrast(1.05) brightness(.55);
+    pointer-events:none;
+  }
+  .bg-video.show{opacity:1}
 
   /* ---------- vignette + grain ---------- */
   .vignette{
@@ -59,12 +57,12 @@
     80%{transform:translate(3%,-1%)} 100%{transform:translate(0,0)}
   }
 
-  /* ---------- rain particles canvas ---------- */
+  /* ---------- rain canvas ---------- */
   #rain-canvas{position:fixed;inset:0;z-index:3;pointer-events:none;opacity:0;transition:opacity 3s ease}
-  #rain-canvas.show{opacity:.55}
+  #rain-canvas.show{opacity:1}
 
   /* ---------- title screen ---------- */
-  .stage{position:fixed;inset:0;z-index:10;display:flex;align-items:center;justify-content:center;flex-direction:column;transition:opacity 1.8s ease, transform 1.8s ease}
+  .stage{position:fixed;inset:0;z-index:10;display:flex;align-items:center;justify-content:center;flex-direction:column;transition:opacity 1.8s ease}
 
   .title-wrap{
     text-align:center;color:var(--ink);
@@ -119,9 +117,9 @@
     50%{opacity:.55}
   }
 
-  /* ---------- menu ---------- */
+  /* ---------- menu (right side) ---------- */
   .menu{
-    position:fixed;left:7vw;top:50%;transform:translateY(-50%);
+    position:fixed;right:7vw;top:50%;transform:translateY(-50%);
     z-index:12;display:flex;flex-direction:column;gap:6vh;
     opacity:0;transition:opacity 2s ease;pointer-events:none;
   }
@@ -130,13 +128,16 @@
   .mission{
     position:relative;display:flex;flex-direction:column;align-items:center;
     cursor:pointer;
-    opacity:0;transform:translateX(-12px);
-    transition:transform .8s ease, opacity 1.4s ease;
+    opacity:0;transform:translateX(14px);
+    transition:transform .7s cubic-bezier(.2,.6,.2,1), opacity 1.4s ease;
   }
   .menu.in .mission{opacity:1;transform:translateX(0)}
   .menu.in .mission:nth-child(1){transition-delay:.2s}
   .menu.in .mission:nth-child(2){transition-delay:.55s}
   .menu.in .mission:nth-child(3){transition-delay:.9s}
+
+  /* hover: only the hovered mission shifts right */
+  .menu.in .mission:hover{transform:translateX(10px)}
 
   .mission .label{
     font-family:var(--serif);font-weight:300;font-size:15px;letter-spacing:.55em;
@@ -158,25 +159,40 @@
   .teru-img{
     width:100%;height:100%;object-fit:contain;
     filter:drop-shadow(0 8px 16px rgba(0,0,0,.55)) drop-shadow(0 0 22px rgba(180,200,230,.12));
-    animation:sway 6s ease-in-out infinite;
-    transition:filter .4s ease, transform .4s ease;
+    transition:filter .4s ease;
+    transform-origin:50% 8%;
   }
-  .mission:nth-child(2) .teru-img{animation-delay:-2s;animation-duration:7s}
-  .mission:nth-child(3) .teru-img{animation-delay:-4s;animation-duration:6.5s}
+  /* independent ambient breathing — different timings per teru, only the hovered one sways more */
+  .mission[data-key="chahan"] .teru-img{animation:breathe1 9s ease-in-out infinite}
+  .mission[data-key="tenki"]  .teru-img{animation:breathe2 11s -3.4s ease-in-out infinite}
+  .mission[data-key="photo"]  .teru-img{animation:breathe3 8.5s -6.1s ease-in-out infinite}
 
   .mission:hover .teru-img{
     filter:drop-shadow(0 10px 20px rgba(0,0,0,.6)) drop-shadow(0 0 28px rgba(217,184,138,.35));
+    animation:swayHover 3s ease-in-out infinite;
+  }
+
+  @keyframes breathe1{
+    0%,100%{transform:rotate(-.4deg) translateY(0)}
+    50%{transform:rotate(.4deg) translateY(-1.5px)}
+  }
+  @keyframes breathe2{
+    0%,100%{transform:rotate(.5deg) translateY(-1px)}
+    50%{transform:rotate(-.5deg) translateY(1px)}
+  }
+  @keyframes breathe3{
+    0%,100%{transform:rotate(-.3deg) translateY(1px)}
+    50%{transform:rotate(.3deg) translateY(-2px)}
+  }
+  @keyframes swayHover{
+    0%,100%{transform:rotate(-1.4deg) translateY(0)}
+    50%{transform:rotate(1.4deg) translateY(-3px)}
   }
 
   /* string above teru */
   .teru-string{
     position:absolute;top:-22px;left:50%;width:1px;height:22px;
     background:linear-gradient(to bottom, transparent, rgba(244,246,251,.25));
-  }
-
-  @keyframes sway{
-    0%,100%{transform:rotate(-1.2deg) translateY(0)}
-    50%{transform:rotate(1.2deg) translateY(-3px)}
   }
 
   /* ripple */
@@ -198,21 +214,110 @@
   .mission.firing .teru-img{transform:scale(.96);transition:transform .3s ease}
   .mission.firing .label{color:#fff;letter-spacing:.7em}
 
-  /* ---------- corner marks (movie poster feel) ---------- */
-  .corner{
-    position:fixed;z-index:11;font-family:var(--latin);font-weight:300;
-    font-size:10px;letter-spacing:.4em;color:var(--ink-faint);
-    text-transform:uppercase;opacity:0;transition:opacity 2s 1s ease;
+  /* ---------- 本家 trigger (bottom-left) ---------- */
+  .honke{
+    position:fixed;left:32px;bottom:32px;z-index:12;
+    display:flex;align-items:center;gap:10px;
+    cursor:pointer;
+    opacity:0;transform:translateY(6px);
+    transition:opacity 1.6s ease, transform 1.6s ease;
     pointer-events:none;
   }
-  .corner.in{opacity:1}
-  .corner.tl{top:28px;left:28px}
-  .corner.tr{top:28px;right:28px;text-align:right}
-  .corner.bl{bottom:28px;left:28px}
-  .corner.br{bottom:28px;right:28px;text-align:right}
-  .corner .dot{display:inline-block;width:4px;height:4px;background:var(--ink-faint);border-radius:50%;vertical-align:middle;margin:0 8px}
+  .honke.in{opacity:1;transform:translateY(0);pointer-events:auto}
+  .honke .play-mark{
+    width:22px;height:22px;border:1px solid var(--ink-faint);border-radius:50%;
+    display:flex;align-items:center;justify-content:center;
+    transition:border-color .35s ease, background .35s ease;
+  }
+  .honke .play-mark::before{
+    content:'';display:block;width:0;height:0;
+    border-left:5px solid var(--ink-soft);
+    border-top:3.5px solid transparent;border-bottom:3.5px solid transparent;
+    margin-left:2px;transition:border-left-color .35s ease;
+  }
+  .honke .h-text{display:flex;flex-direction:column;line-height:1.2}
+  .honke .h-jp{
+    font-family:var(--serif);font-weight:300;font-size:12px;letter-spacing:.4em;
+    color:var(--ink-soft);
+  }
+  .honke .h-en{
+    font-family:var(--latin);font-weight:300;font-size:9px;letter-spacing:.45em;
+    color:var(--ink-faint);text-transform:uppercase;margin-top:3px;
+  }
+  .honke:hover .play-mark{border-color:var(--ink);background:rgba(244,246,251,.06)}
+  .honke:hover .play-mark::before{border-left-color:var(--ink)}
+  .honke:hover .h-jp{color:var(--ink)}
+  .honke:hover .h-en{color:var(--ink-soft)}
 
-  /* ---------- mission destination screen ---------- */
+  /* ---------- 本家 modal (cinematic letterbox) ---------- */
+  .honke-modal{
+    position:fixed;inset:0;z-index:40;
+    background:rgba(0,0,0,.82);
+    backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px);
+    opacity:0;pointer-events:none;
+    transition:opacity .9s ease;
+    display:flex;align-items:center;justify-content:center;flex-direction:column;
+  }
+  .honke-modal.in{opacity:1;pointer-events:auto}
+
+  /* letterbox bars */
+  .lbar{position:fixed;left:0;right:0;height:0;background:#000;z-index:41;transition:height 1.1s cubic-bezier(.2,.6,.2,1);pointer-events:none}
+  .lbar.top{top:0}
+  .lbar.bot{bottom:0}
+  .lbar.in{height:8vh}
+
+  .h-overline{
+    font-family:var(--latin);font-weight:300;font-size:10px;letter-spacing:.7em;
+    color:var(--ink-faint);text-transform:uppercase;margin-bottom:18px;
+    opacity:0;transition:opacity 1s .5s ease;
+  }
+  .h-title{
+    font-family:var(--serif);font-weight:300;font-size:clamp(14px,1.8vw,17px);
+    letter-spacing:.5em;color:var(--ink);margin-bottom:24px;
+    opacity:0;transform:translateY(6px);
+    transition:opacity 1s .6s ease, transform 1s .6s ease;
+  }
+  .h-frame-wrap{
+    position:relative;width:min(82vw, 1100px);aspect-ratio:16/9;
+    opacity:0;transform:scale(.98);
+    transition:opacity 1.1s .8s ease, transform 1.1s .8s ease;
+  }
+  .h-corners{position:absolute;inset:-14px;pointer-events:none}
+  .h-corners span{position:absolute;background:var(--ink-faint)}
+  .h-corners span:nth-child(1){top:-1px;left:-1px;width:24px;height:1px}
+  .h-corners span:nth-child(2){top:-1px;left:-1px;width:1px;height:24px}
+  .h-corners span:nth-child(3){bottom:-1px;right:-1px;width:24px;height:1px}
+  .h-corners span:nth-child(4){bottom:-1px;right:-1px;width:1px;height:24px}
+
+  .h-frame{
+    width:100%;height:100%;border:0;
+    box-shadow:0 0 60px rgba(0,0,0,.7), 0 0 120px rgba(180,200,230,.05);
+    background:#000;
+  }
+
+  .h-meta{
+    margin-top:22px;font-family:var(--latin);font-weight:300;font-size:10px;
+    letter-spacing:.5em;color:var(--ink-faint);text-transform:uppercase;
+    opacity:0;transition:opacity 1s 1s ease;
+  }
+
+  .honke-modal.in .h-overline,
+  .honke-modal.in .h-meta{opacity:1}
+  .honke-modal.in .h-title{opacity:1;transform:translateY(0)}
+  .honke-modal.in .h-frame-wrap{opacity:1;transform:scale(1)}
+
+  .h-close{
+    position:absolute;top:24px;right:28px;z-index:42;
+    width:36px;height:36px;border-radius:50%;
+    border:1px solid var(--ink-faint);background:transparent;color:var(--ink-soft);
+    cursor:pointer;font-family:var(--latin);font-weight:300;font-size:18px;line-height:1;
+    display:flex;align-items:center;justify-content:center;
+    transition:all .35s ease;opacity:0;
+  }
+  .honke-modal.in .h-close{opacity:1;transition-delay:.5s}
+  .h-close:hover{border-color:var(--ink);color:var(--ink);background:rgba(244,246,251,.06)}
+
+  /* ---------- mission destination scene ---------- */
   .scene{
     position:fixed;inset:0;z-index:30;background:rgba(0,0,0,.0);
     display:flex;align-items:center;justify-content:center;flex-direction:column;
@@ -220,10 +325,11 @@
   }
   .scene.in{opacity:1;pointer-events:auto;background:rgba(0,0,0,.78)}
   .scene-name{
-    font-family:var(--serif);font-weight:300;font-size:clamp(36px,5vw,56px);
-    letter-spacing:.45em;color:var(--ink);
+    font-family:var(--serif);font-weight:300;font-size:clamp(32px,4.5vw,52px);
+    letter-spacing:.4em;color:var(--ink);
     text-shadow:0 0 30px rgba(180,200,230,.2);
     transform:translateY(10px);opacity:0;transition:all 1.6s .3s ease;
+    text-align:center;padding:0 24px;
   }
   .scene.in .scene-name{transform:translateY(0);opacity:1}
   .scene-mark{
@@ -236,33 +342,38 @@
     position:absolute;top:32px;left:32px;font-family:var(--latin);font-weight:300;
     font-size:11px;letter-spacing:.4em;color:var(--ink-faint);
     text-transform:uppercase;cursor:pointer;padding:8px 12px;
-    transition:color .3s ease;opacity:0;transition:opacity 1.6s 1.1s ease, color .3s ease;
+    opacity:0;transition:opacity 1.6s 1.1s ease, color .3s ease;
   }
   .scene.in .scene-back{opacity:1}
   .scene-back:hover{color:var(--ink)}
 
+  /* hidden YouTube audio iframe */
+  #yt-audio-host{
+    position:fixed;left:-9999px;top:-9999px;width:1px;height:1px;
+    opacity:0;pointer-events:none;
+  }
+
   /* mobile tweaks */
   @media (max-width:640px){
-    .menu{left:6vw;gap:5vh}
+    .menu{right:6vw;gap:5vh}
     .teru-frame{width:62px;height:88px}
     .mission .label{font-size:12px;letter-spacing:.45em}
-    .corner{font-size:9px}
-    .corner.tl,.corner.tr{top:18px}
-    .corner.tl,.corner.bl{left:18px}
-    .corner.tr,.corner.br{right:18px}
-    .corner.bl,.corner.br{bottom:18px}
+    .honke{left:18px;bottom:18px}
+    .honke .h-jp{font-size:11px}
+    .h-frame-wrap{width:92vw}
+    .h-close{top:14px;right:14px}
   }
 </style>
 </head>
 <body>
 
-  <!-- gradient fallback first so video paints on top of it -->
+  <!-- gradient fallback first so the optional rain.mp4 paints on top -->
   <div class="bg-fallback" id="bgFallback"></div>
   <video class="bg-video" id="bgVideo" muted loop playsinline preload="auto">
     <source src="rain.mp4" type="video/mp4">
   </video>
 
-  <!-- rain particle layer -->
+  <!-- realistic layered rain -->
   <canvas id="rain-canvas"></canvas>
 
   <!-- texture & vignette -->
@@ -282,35 +393,56 @@
   </div>
   <div class="tap-hint" id="tapHint">tap to begin</div>
 
-  <!-- corner marks -->
-  <div class="corner tl" id="cornerTL">N <span class="dot"></span> 35.6895</div>
-  <div class="corner tr" id="cornerTR">E <span class="dot"></span> 139.6917</div>
-  <div class="corner bl" id="cornerBL">vol <span class="dot"></span> 01</div>
-  <div class="corner br" id="cornerBR">rain <span class="dot"></span> on</div>
-
-  <!-- main menu -->
+  <!-- main menu (right side) -->
   <div class="menu" id="menu">
-    <div class="mission" data-name="チャーハン" data-key="chahan">
+    <div class="mission" data-key="chahan" data-title="３人でチャーハン作り">
       <div class="label">チャーハン</div>
       <div class="teru-frame">
         <span class="teru-string"></span>
         <img class="teru-img" src="teru1.png" alt="" data-fallback="1">
       </div>
     </div>
-    <div class="mission" data-name="天気" data-key="tenki">
+    <div class="mission" data-key="tenki" data-title="天気探し">
       <div class="label">天　気</div>
       <div class="teru-frame">
         <span class="teru-string"></span>
         <img class="teru-img" src="teru2.png" alt="" data-fallback="2">
       </div>
     </div>
-    <div class="mission" data-name="フォト" data-key="photo">
+    <div class="mission" data-key="photo" data-title="参考フォト集">
       <div class="label">フォト</div>
       <div class="teru-frame">
         <span class="teru-string"></span>
         <img class="teru-img" src="teru3.png" alt="" data-fallback="3">
       </div>
     </div>
+  </div>
+
+  <!-- 本家 trigger (bottom-left) -->
+  <div class="honke" id="honkeBtn" role="button" aria-label="本家映像を見る">
+    <div class="play-mark"></div>
+    <div class="h-text">
+      <div class="h-jp">本　家</div>
+      <div class="h-en">play official</div>
+    </div>
+  </div>
+
+  <!-- letterbox bars (must be outside modal so they reach beyond) -->
+  <div class="lbar top" id="lbarTop"></div>
+  <div class="lbar bot" id="lbarBot"></div>
+
+  <!-- 本家 modal -->
+  <div class="honke-modal" id="honkeModal">
+    <button class="h-close" id="honkeClose" aria-label="閉じる">×</button>
+    <div class="h-overline">— 本 家 映 像 —</div>
+    <div class="h-title">『 天 気 の 子 』 予 告</div>
+    <div class="h-frame-wrap">
+      <div class="h-corners"><span></span><span></span><span></span><span></span></div>
+      <iframe id="honkeIframe" class="h-frame" src="" title="本家映像" frameborder="0"
+        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+        referrerpolicy="strict-origin-when-cross-origin" allowfullscreen></iframe>
+    </div>
+    <div class="h-meta">© toho · official trailer</div>
   </div>
 
   <!-- mission destination scene -->
@@ -320,33 +452,35 @@
     <div class="scene-back" id="sceneBack">← back</div>
   </div>
 
-  <!-- audio -->
-  <audio id="rainAudio" loop preload="auto">
-    <source src="rain.mp3" type="audio/mpeg">
-  </audio>
+  <!-- hidden YouTube audio host -->
+  <div id="yt-audio-host"><div id="yt-audio-player"></div></div>
+
+  <!-- click sfx (rain1.mp3) -->
   <audio id="clickAudio" preload="auto">
     <source src="rain1.mp3" type="audio/mpeg">
   </audio>
 
 <script>
 (()=>{
-  // ---------- state ----------
   const State = { LOADING:'loading', TITLE:'title', TRANS:'trans', MENU:'menu', SCENE:'scene' };
   let state = State.LOADING;
 
   const $ = (id)=>document.getElementById(id);
   const titleWrap = $('titleWrap');
   const tapHint = $('tapHint');
-  const stage = $('stage');
   const menu = $('menu');
   const bgVideo = $('bgVideo');
   const bgFallback = $('bgFallback');
-  const rainAudio = $('rainAudio');
   const clickAudio = $('clickAudio');
   const scene = $('scene');
   const sceneName = $('sceneName');
   const sceneBack = $('sceneBack');
-  const corners = ['cornerTL','cornerTR','cornerBL','cornerBR'].map($);
+  const honkeBtn = $('honkeBtn');
+  const honkeModal = $('honkeModal');
+  const honkeClose = $('honkeClose');
+  const honkeIframe = $('honkeIframe');
+  const lbarTop = $('lbarTop');
+  const lbarBot = $('lbarBot');
 
   // ---------- title fade-in ----------
   window.addEventListener('load', ()=>{
@@ -356,17 +490,17 @@
     }, 700);
   });
 
-  // ---------- teru fallback (if user images missing) ----------
+  // ---------- teru fallback ----------
   document.querySelectorAll('.teru-img').forEach(img=>{
     img.addEventListener('error', ()=>{
       const i = img.dataset.fallback;
-      const svg = teruSVG(i);
-      img.outerHTML = svg;
+      const wrap = img.parentElement;
+      wrap.removeChild(img);
+      wrap.insertAdjacentHTML('beforeend', teruSVG(i));
     });
   });
 
   function teruSVG(variant){
-    // three subtly different teru-teru-bozu drawn inline
     const eyes = {
       '1':'<path d="M40,46 Q42,49 44,46" stroke="rgba(40,50,65,.7)" fill="none" stroke-width="1.2" stroke-linecap="round"/><path d="M56,46 Q58,49 60,46" stroke="rgba(40,50,65,.7)" fill="none" stroke-width="1.2" stroke-linecap="round"/>',
       '2':'<circle cx="42" cy="47" r="1.2" fill="rgba(40,50,65,.75)"/><circle cx="58" cy="47" r="1.2" fill="rgba(40,50,65,.75)"/><path d="M46,54 Q50,57 54,54" stroke="rgba(40,50,65,.6)" fill="none" stroke-width="1" stroke-linecap="round"/>',
@@ -386,61 +520,103 @@
     </svg>`;
   }
 
-  // hide the video element if source fails (lets fallback gradient show)
+  // hide video element if source fails
   bgVideo.addEventListener('error', ()=>{ bgVideo.style.display = 'none'; });
   const vidSrc = bgVideo.querySelector('source');
   if(vidSrc) vidSrc.addEventListener('error', ()=>{ bgVideo.style.display = 'none'; });
 
-  // ---------- start experience on tap ----------
-  function start(){
-    if(state !== State.TITLE) return;
-    state = State.TRANS;
+  // ---------- YouTube IFrame API for audio loop ----------
+  let ytPlayer = null;
+  let ytReady = false;
+  const YT_AUDIO_ID = 'YAXTn0E-Zgo';
 
-    // hide title + hint
-    titleWrap.classList.remove('in');
-    titleWrap.classList.add('out');
-    tapHint.classList.add('out');
+  (function loadYT(){
+    if(window.YT && window.YT.Player){ initYT(); return; }
+    const tag = document.createElement('script');
+    tag.src = 'https://www.youtube.com/iframe_api';
+    document.head.appendChild(tag);
+  })();
+  window.onYouTubeIframeAPIReady = function(){ initYT(); };
 
-    // bring up rain visuals
-    bgVideo.classList.add('show');
-    bgFallback.classList.add('show');
-    document.getElementById('rain-canvas').classList.add('show');
-
-    // attempt video play
-    bgVideo.play().catch(()=>{});
-
-    // start audio + fade volume from 0
-    try{
-      rainAudio.volume = 0;
-      rainAudio.play().then(()=>fadeVolume(rainAudio, 0, 0.65, 4500))
-        .catch(()=>{/* silent if no file */});
-    }catch(e){}
-
-    // reveal corner marks subtly
-    setTimeout(()=>corners.forEach(c=>c && c.classList.add('in')), 1200);
-
-    // reveal menu after the rain has settled in
-    setTimeout(()=>{
-      menu.classList.add('in');
-      state = State.MENU;
-    }, 2200);
+  function initYT(){
+    if(ytPlayer) return;
+    ytPlayer = new YT.Player('yt-audio-player', {
+      height:'1', width:'1',
+      videoId: YT_AUDIO_ID,
+      playerVars:{
+        autoplay:0, controls:0, disablekb:1, fs:0, iv_load_policy:3,
+        modestbranding:1, playsinline:1, rel:0,
+        loop:1, playlist:YT_AUDIO_ID
+      },
+      events:{
+        'onReady': ()=>{
+          ytReady = true;
+          try{ ytPlayer.setVolume(0); }catch(e){}
+        },
+        'onStateChange': (e)=>{
+          if(e.data === YT.PlayerState.ENDED){
+            try{ ytPlayer.seekTo(0); ytPlayer.playVideo(); }catch(err){}
+          }
+        }
+      }
+    });
   }
 
-  function fadeVolume(audio, from, to, duration){
-    const t0 = performance.now();
+  function ytFadeVolume(target, duration){
+    if(!ytPlayer || !ytReady) return;
+    const start = performance.now();
+    let from = 0;
+    try{ from = ytPlayer.getVolume() || 0; }catch(e){}
     function step(now){
-      const t = Math.min(1, (now - t0)/duration);
-      // ease-in-out
+      const t = Math.min(1,(now-start)/duration);
       const e = t<.5 ? 2*t*t : 1 - Math.pow(-2*t+2,2)/2;
-      audio.volume = from + (to-from)*e;
+      const v = from + (target - from) * e;
+      try{ ytPlayer.setVolume(v); }catch(err){}
       if(t<1) requestAnimationFrame(step);
     }
     requestAnimationFrame(step);
   }
 
-  // listen for first interaction anywhere
+  // ---------- start experience on first tap ----------
+  let started = false;
+  function start(){
+    if(started) return;
+    if(state !== State.TITLE) return;
+    started = true;
+    state = State.TRANS;
+
+    titleWrap.classList.remove('in');
+    titleWrap.classList.add('out');
+    tapHint.classList.add('out');
+
+    bgVideo.classList.add('show');
+    bgFallback.classList.add('show');
+    document.getElementById('rain-canvas').classList.add('show');
+    rainActive = true;
+
+    bgVideo.play().catch(()=>{});
+
+    const tryPlayYT = ()=>{
+      if(!ytPlayer || !ytReady){
+        setTimeout(tryPlayYT, 300);
+        return;
+      }
+      try{
+        ytPlayer.setVolume(0);
+        ytPlayer.playVideo();
+        setTimeout(()=> ytFadeVolume(55, 5000), 400);
+      }catch(err){}
+    };
+    tryPlayYT();
+
+    setTimeout(()=>{
+      menu.classList.add('in');
+      honkeBtn.classList.add('in');
+      state = State.MENU;
+    }, 2200);
+  }
   ['click','touchstart','keydown'].forEach(ev=>{
-    window.addEventListener(ev, start, {once:false, passive:true});
+    window.addEventListener(ev, start, {passive:true});
   });
 
   // ---------- ripple on missions ----------
@@ -450,7 +626,6 @@
       e.stopPropagation();
       m.classList.add('firing');
 
-      // 3 staggered ripples centered on the teru
       const frame = m.querySelector('.teru-frame');
       const r1 = makeRipple();
       const r2 = makeRipple('r2');
@@ -458,16 +633,14 @@
       frame.appendChild(r1); frame.appendChild(r2); frame.appendChild(r3);
       setTimeout(()=>{r1.remove();r2.remove();r3.remove();}, 2200);
 
-      // play click sfx
       try{
         clickAudio.currentTime = 0;
         clickAudio.volume = 0.85;
         clickAudio.play().catch(()=>{});
-      }catch(e){}
+      }catch(err){}
 
-      // transition to mission scene
-      const name = m.dataset.name;
-      setTimeout(()=>openScene(name), 700);
+      const title = m.dataset.title || m.dataset.key;
+      setTimeout(()=>openScene(title), 700);
       setTimeout(()=>m.classList.remove('firing'), 900);
     });
   });
@@ -492,55 +665,158 @@
     setTimeout(()=>{ state = State.MENU; }, 800);
   });
 
-  // ---------- rain particle canvas ----------
+  // ---------- 本家 modal ----------
+  let savedYTVol = 55;
+  honkeBtn.addEventListener('click', (e)=>{
+    e.stopPropagation();
+    if(state !== State.MENU) return;
+
+    if(ytPlayer && ytReady){
+      try{ savedYTVol = ytPlayer.getVolume() || 55; }catch(err){}
+      ytFadeVolume(8, 600);
+    }
+
+    // letterbox bars in
+    lbarTop.classList.add('in');
+    lbarBot.classList.add('in');
+
+    const embed = `https://www.youtube.com/embed/VGksHFs04Rc?start=3&autoplay=1&rel=0&modestbranding=1&playsinline=1`;
+    honkeIframe.src = embed;
+    honkeModal.classList.add('in');
+  });
+  function closeHonke(){
+    honkeModal.classList.remove('in');
+    lbarTop.classList.remove('in');
+    lbarBot.classList.remove('in');
+    setTimeout(()=>{ honkeIframe.src = ''; }, 600);
+    if(ytPlayer && ytReady){ ytFadeVolume(savedYTVol, 900); }
+  }
+  honkeClose.addEventListener('click', (e)=>{ e.stopPropagation(); closeHonke(); });
+  honkeModal.addEventListener('click', (e)=>{
+    if(e.target === honkeModal) closeHonke();
+  });
+  document.addEventListener('keydown', (e)=>{
+    if(e.key === 'Escape' && honkeModal.classList.contains('in')) closeHonke();
+  });
+
+  // ---------- realistic layered rain ----------
   const canvas = document.getElementById('rain-canvas');
   const ctx = canvas.getContext('2d');
+  let W = 0, H = 0, dpr = 1;
+  let rainActive = false;
   let drops = [];
 
+  // three layers: far → near. Near layer is fast, long, bright (the streaks)
+  const LAYERS = [
+    { share:.30, sMin: 9,  sMax: 16, lMin: 6,  lMax: 16, oMin:.10, oMax:.22, wMin:.5, wMax:.8, slMin:-.4, slMax:-1.0 },
+    { share:.40, sMin: 22, sMax: 38, lMin: 18, lMax: 42, oMin:.22, oMax:.45, wMin:.7, wMax:1.1, slMin:-.7, slMax:-1.6 },
+    { share:.30, sMin: 45, sMax: 95, lMin: 45, lMax: 110, oMin:.50, oMax:.95, wMin:1.0, wMax:1.7, slMin:-1.0, slMax:-2.4 },
+  ];
+
+  function rand(a,b){ return a + Math.random()*(b-a); }
+
+  function makeDrop(layer){
+    return {
+      x: Math.random()*W,
+      y: Math.random()*H - H,
+      len: rand(layer.lMin, layer.lMax),
+      speed: rand(layer.sMin, layer.sMax),
+      opacity: rand(layer.oMin, layer.oMax),
+      width: rand(layer.wMin, layer.wMax),
+      slant: rand(layer.slMin, layer.slMax),
+      layer
+    };
+  }
+
+  function initDrops(){
+    drops = [];
+    const area = W*H;
+    // density: a lot of drops to feel like real rain
+    const baseCount = Math.min(1200, Math.max(450, Math.floor(area/1700)));
+    LAYERS.forEach(layer=>{
+      const n = Math.floor(baseCount * layer.share);
+      for(let i=0;i<n;i++) drops.push(makeDrop(layer));
+    });
+  }
+
   function resize(){
-    canvas.width = innerWidth * devicePixelRatio;
-    canvas.height = innerHeight * devicePixelRatio;
-    canvas.style.width = innerWidth+'px';
-    canvas.style.height = innerHeight+'px';
-    ctx.scale(devicePixelRatio, devicePixelRatio);
+    dpr = Math.min(2, window.devicePixelRatio || 1);
+    W = innerWidth; H = innerHeight;
+    canvas.width = W * dpr;
+    canvas.height = H * dpr;
+    canvas.style.width = W+'px';
+    canvas.style.height = H+'px';
+    ctx.setTransform(1,0,0,1,0,0);
+    ctx.scale(dpr, dpr);
     initDrops();
   }
-  function initDrops(){
-    const count = Math.floor(innerWidth/8);
-    drops = [];
-    for(let i=0;i<count;i++){
-      drops.push({
-        x: Math.random()*innerWidth,
-        y: Math.random()*innerHeight,
-        len: 8 + Math.random()*18,
-        speed: 6 + Math.random()*10,
-        opacity: .12 + Math.random()*.35,
-        slant: -1 - Math.random()*1.2
-      });
-    }
+
+  // small splashes when fast drops hit the bottom area
+  const splashes = [];
+  function addSplash(x){
+    splashes.push({ x, y: H - rand(2,10), life: 0, max: rand(180, 320), r: rand(1,3) });
   }
-  function drawRain(){
-    ctx.clearRect(0,0,canvas.width,canvas.height);
-    ctx.lineWidth = 1;
+
+  function tick(){
+    if(!rainActive){ requestAnimationFrame(tick); return; }
+
+    // mild motion-blur fade so streaks look like persistent flashes
+    ctx.fillStyle = 'rgba(0,0,0,0.20)';
+    ctx.fillRect(0,0,W,H);
+
     ctx.lineCap = 'round';
-    drops.forEach(d=>{
-      ctx.strokeStyle = `rgba(210,225,245,${d.opacity})`;
+
+    for(let i=0;i<drops.length;i++){
+      const d = drops[i];
+      ctx.lineWidth = d.width;
+      // bluish-white streak; near layer brighter
+      const blue = 248;
+      ctx.strokeStyle = `rgba(220,${blue},255,${d.opacity})`;
       ctx.beginPath();
       ctx.moveTo(d.x, d.y);
       ctx.lineTo(d.x + d.slant, d.y + d.len);
       ctx.stroke();
+
+      d.x += d.slant * .35;
       d.y += d.speed;
-      d.x += d.slant * .15;
-      if(d.y > innerHeight){
-        d.y = -d.len;
-        d.x = Math.random()*innerWidth;
+
+      if(d.y > H){
+        if(d.layer === LAYERS[2] && Math.random() < .55) addSplash(d.x);
+        d.y = -d.len - rand(0, 100);
+        d.x = Math.random()*W;
+        d.len = rand(d.layer.lMin, d.layer.lMax);
+        d.speed = rand(d.layer.sMin, d.layer.sMax);
+        d.opacity = rand(d.layer.oMin, d.layer.oMax);
+        d.slant = rand(d.layer.slMin, d.layer.slMax);
       }
-    });
-    requestAnimationFrame(drawRain);
+    }
+
+    // splash ripples
+    for(let i=splashes.length-1;i>=0;i--){
+      const s = splashes[i];
+      s.life += 16;
+      const t = s.life / s.max;
+      if(t >= 1){ splashes.splice(i,1); continue; }
+      const alpha = (1-t)*0.45;
+      const radius = s.r + t*8;
+      ctx.beginPath();
+      ctx.arc(s.x, s.y, radius, 0, Math.PI*2);
+      ctx.strokeStyle = `rgba(220,235,255,${alpha})`;
+      ctx.lineWidth = 0.8;
+      ctx.stroke();
+    }
+
+    requestAnimationFrame(tick);
   }
-  window.addEventListener('resize', resize);
+
+  let resizeTimer = null;
+  window.addEventListener('resize', ()=>{
+    clearTimeout(resizeTimer);
+    resizeTimer = setTimeout(resize, 120);
+  });
   resize();
-  drawRain();
+  ctx.fillStyle = '#000'; ctx.fillRect(0,0,W,H);
+  requestAnimationFrame(tick);
 
 })();
 </script>
