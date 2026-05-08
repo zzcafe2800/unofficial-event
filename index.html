@@ -32,14 +32,14 @@
   }
   .bg-fallback.show{opacity:1}
 
-  .bg-video{
+  .bg-image{
     position:fixed;inset:0;width:100%;height:100%;
     object-fit:cover;z-index:1;
     opacity:0;transition:opacity 3.5s ease;
-    filter:saturate(.85) contrast(1.05) brightness(.55);
-    pointer-events:none;
+    filter:saturate(.9) contrast(1.05) brightness(.78);
+    pointer-events:none;user-select:none;
   }
-  .bg-video.show{opacity:1}
+  .bg-image.show{opacity:1}
 
   /* ---------- vignette + grain ---------- */
   .vignette{
@@ -94,30 +94,40 @@
   .title-wrap.in{opacity:1;transform:translateY(0)}
   .title-wrap.out{opacity:0;transform:translateY(-6px);transition:opacity 1.6s ease, transform 1.6s ease}
 
+  /* small JP disclaimer at the very top */
   .t-overline{
-    font-family:var(--latin);font-weight:300;font-size:11px;letter-spacing:.55em;
-    color:var(--ink-faint);text-transform:uppercase;margin-bottom:28px;
+    font-family:var(--serif);font-weight:300;
+    font-size:clamp(11px,1.3vw,13px);letter-spacing:.18em;
+    color:var(--ink-soft);margin-bottom:24px;
     opacity:0;animation:fadeUp 2.6s .3s ease forwards;
   }
+  /* themed sub-line: 『天気の子』 (smaller now) with thin lines on either side */
   .t-row1{
-    font-weight:300;font-size:clamp(13px,2.2vw,17px);letter-spacing:.4em;
+    font-weight:300;font-size:clamp(15px,2vw,19px);letter-spacing:.35em;
     color:var(--ink-soft);margin-bottom:22px;
+    display:inline-flex;align-items:center;justify-content:center;gap:14px;
     opacity:0;animation:fadeUp 2.6s .8s ease forwards;
   }
+  .t-row1::before, .t-row1::after{
+    content:'';display:inline-block;width:24px;height:1px;
+    background:linear-gradient(to right, transparent, rgba(244,246,251,.4), transparent);
+  }
   .t-divider{
-    width:0;height:1px;background:var(--ink-faint);margin:0 auto 26px;
+    width:0;height:1px;background:var(--ink-faint);margin:0 auto 24px;
     animation:lineGrow 2.2s 1.2s cubic-bezier(.2,.6,.2,1) forwards;
   }
+  /* MAIN: 第１回コスプレイベント (the headliner) — sized to fit the longer string */
   .t-main{
-    font-weight:400;font-size:clamp(34px,6vw,64px);letter-spacing:.18em;
+    font-weight:300;font-size:clamp(24px,4.8vw,48px);letter-spacing:.12em;
     color:var(--ink);text-shadow:0 0 28px rgba(180,200,230,.18);
-    opacity:0;animation:fadeUp 2.8s 1.5s ease forwards;
+    opacity:0;animation:fadeUp 2.8s 1.6s ease forwards;
   }
+  /* legal-cover line with thin gradient lines on either side */
   .t-sub{
-    margin-top:22px;font-weight:300;font-size:clamp(13px,1.6vw,16px);letter-spacing:.5em;
+    margin-top:24px;font-weight:300;font-size:clamp(11px,1.35vw,13px);letter-spacing:.42em;
     color:var(--ink-soft);
     display:inline-flex;align-items:center;justify-content:center;gap:14px;
-    opacity:0;animation:fadeUp 2.6s 2.2s ease forwards;
+    opacity:0;animation:fadeUp 2.6s 2.4s ease forwards;
   }
   .t-sub::before, .t-sub::after{
     content:'';display:inline-block;width:22px;height:1px;
@@ -125,8 +135,8 @@
   }
   .t-date{
     font-family:var(--latin);font-weight:300;font-size:11px;letter-spacing:.5em;
-    color:var(--ink-faint);margin-top:46px;
-    opacity:0;animation:fadeUp 2.6s 2.8s ease forwards;
+    color:var(--ink-faint);margin-top:42px;
+    opacity:0;animation:fadeUp 2.6s 3s ease forwards;
   }
 
   .tap-hint{
@@ -394,11 +404,9 @@
 </head>
 <body>
 
-  <!-- gradient fallback first so the optional rain.mp4 paints on top -->
+  <!-- gradient fallback sits behind; rain.png paints on top of it once tapped -->
   <div class="bg-fallback" id="bgFallback"></div>
-  <video class="bg-video" id="bgVideo" muted loop playsinline preload="auto">
-    <source src="rain.mp4" type="video/mp4">
-  </video>
+  <img class="bg-image" id="bgImage" src="rain.png" alt="" draggable="false">
 
   <!-- realistic layered rain -->
   <canvas id="rain-canvas"></canvas>
@@ -416,11 +424,11 @@
   <!-- title screen -->
   <div class="stage" id="stage">
     <div class="title-wrap" id="titleWrap">
-      <div class="t-overline">— invitation —</div>
-      <div class="t-row1">第 １ 回　コ ス プ レ イ ベ ン ト</div>
+      <div class="t-overline">映画作品のファンによる非公式コスプレ交流会</div>
+      <div class="t-row1">『 天 気 の 子 』</div>
       <div class="t-divider"></div>
-      <div class="t-main">『 天 気 の 子 』</div>
-      <div class="t-sub">非 公 式</div>
+      <div class="t-main">第 １ 回 コ ス プ レ イ ベ ン ト</div>
+      <div class="t-sub">非公式ファンイベント　·　非営利</div>
       <div class="t-date">A R A I S H I I  ·  ２０２６</div>
     </div>
   </div>
@@ -507,7 +515,7 @@
   const titleWrap = $('titleWrap');
   const tapHint = $('tapHint');
   const menu = $('menu');
-  const bgVideo = $('bgVideo');
+  const bgImage = $('bgImage');
   const bgFallback = $('bgFallback');
   const rainAudio = $('rainAudio');
   const clickAudio = $('clickAudio');
@@ -559,10 +567,12 @@
     </svg>`;
   }
 
-  // The bg-fallback gradient sits behind the video element. If rain.mp4 fails to
-  // load, the video element stays transparent and the gradient shows through —
-  // so we deliberately do NOT hide the video on error. (Earlier hide-on-error
-  // logic could fire spuriously and make the playing video disappear.)
+  // bg-fallback gradient sits behind the rain.png image. If the file is missing,
+  // the img element simply stays transparent (we hide its broken-image icon)
+  // and the fallback gradient shows through. <img> only fires `error` on initial
+  // load failure, so this is safe — it cannot mid-display the image like the old
+  // <video> element could.
+  bgImage.addEventListener('error', ()=>{ bgImage.style.display = 'none'; });
 
   // ---------- YouTube IFrame API for audio loop ----------
   let ytPlayer = null;
@@ -641,20 +651,10 @@
     titleWrap.classList.add('out');
     tapHint.classList.add('out');
 
-    bgVideo.classList.add('show');
+    bgImage.classList.add('show');
     bgFallback.classList.add('show');
     document.getElementById('rain-canvas').classList.add('show');
     rainActive = true;
-
-    // robust video play (muted autoplay, retry a few times)
-    bgVideo.muted = true;
-    bgVideo.playsInline = true;
-    const playV = (n=0)=>{
-      if(n>4) return;
-      const p = bgVideo.play();
-      if(p && p.catch) p.catch(()=>setTimeout(()=>playV(n+1), 600));
-    };
-    playV();
 
     // ambient rain.mp3 — plays alongside YouTube audio (each <audio>/iframe is independent)
     try{
@@ -858,19 +858,25 @@
   function tick(){
     if(!rainActive){ requestAnimationFrame(tick); return; }
 
-    // clear faster (bigger fade alpha) so streaks read as crisp flashes, not thick smears
-    ctx.fillStyle = 'rgba(0,0,0,0.32)';
-    ctx.fillRect(0,0,W,H);
+    // FULL clear so the background image stays visible underneath. The streak
+    // motion-blur look is now built into each drop via a linear gradient stroke
+    // (transparent at top, opaque at bottom) — no more canvas-wide black fill.
+    ctx.clearRect(0, 0, W, H);
 
     ctx.lineCap = 'round';
 
     for(let i=0;i<drops.length;i++){
       const d = drops[i];
       ctx.lineWidth = d.width;
-      ctx.strokeStyle = `rgba(220,235,255,${d.opacity})`;
+      const x2 = d.x + d.slant;
+      const y2 = d.y + d.len;
+      const grad = ctx.createLinearGradient(d.x, d.y, x2, y2);
+      grad.addColorStop(0, 'rgba(225,238,255,0)');
+      grad.addColorStop(1, `rgba(230,240,255,${d.opacity})`);
+      ctx.strokeStyle = grad;
       ctx.beginPath();
       ctx.moveTo(d.x, d.y);
-      ctx.lineTo(d.x + d.slant, d.y + d.len);
+      ctx.lineTo(x2, y2);
       ctx.stroke();
 
       d.x += d.slant * .35;
@@ -895,7 +901,7 @@
     resizeTimer = setTimeout(resize, 120);
   });
   resize();
-  ctx.fillStyle = '#000'; ctx.fillRect(0,0,W,H);
+  // (no initial fill — canvas starts fully transparent so rain.png shows through)
   requestAnimationFrame(tick);
 
 })();
