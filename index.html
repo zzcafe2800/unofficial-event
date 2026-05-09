@@ -4,6 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <title>第１回コスプレイベント『天気の子』</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' fill='%23080a10'/%3E%3Cpath d='M50 28 L50 36 M14 60 Q14 36 50 32 Q86 36 86 60 M50 36 L50 88 Q50 95 44 95 Q38 95 38 90' stroke='white' fill='none' stroke-width='2' stroke-linecap='round'/%3E%3C/svg%3E">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Noto+Serif+JP:wght@200;300;400;500;700&family=Cormorant+Garamond:wght@300;400&display=swap" rel="stylesheet">
@@ -64,7 +65,7 @@
   @media (max-width:640px){.credit{left:14px;top:14px}.credit .c-key{font-size:7.5px}.credit .c-val{font-size:9px;letter-spacing:.18em}}
 
   /* ---------- title screen ---------- */
-  .stage{position:fixed;inset:0;z-index:10;display:flex;align-items:center;justify-content:center;flex-direction:column;transition:opacity 1.8s ease}
+  .stage{position:fixed;inset:0;z-index:10;display:flex;align-items:center;justify-content:center;flex-direction:column;transition:opacity 1.8s ease;pointer-events:none}
   .title-wrap{text-align:center;color:var(--ink);opacity:0;transform:translateY(8px);transition:opacity 2.4s cubic-bezier(.2,.6,.2,1), transform 2.4s cubic-bezier(.2,.6,.2,1)}
   .title-wrap.in{opacity:1;transform:translateY(0)}
   .title-wrap.out{opacity:0;transform:translateY(-6px);transition:opacity 1.6s ease, transform 1.6s ease}
@@ -582,794 +583,780 @@
   <div id="yt-audio-host" style="position:fixed;left:-9999px;top:-9999px;width:1px;height:1px;opacity:0;pointer-events:none"><div id="yt-audio-player"></div></div>
 
 <!-- ============================== JS ============================== -->
-<script type="module">
-import { initializeApp } from "https://www.gstatic.com/firebasejs/12.13.0/firebase-app.js";
-import {
-  getFirestore, doc, setDoc, updateDoc, getDoc, collection, query, where,
-  getDocs, addDoc, deleteDoc, onSnapshot, serverTimestamp, runTransaction,
-  arrayUnion, orderBy, limit
-} from "https://www.gstatic.com/firebasejs/12.13.0/firebase-firestore.js";
-
-const firebaseConfig = {
-  apiKey: "AIzaSyAvLqQhgJlZLpyhfAYEdp38inFuIoUrmjg",
-  authDomain: "offev-3c70f.firebaseapp.com",
-  projectId: "offev-3c70f",
-  storageBucket: "offev-3c70f.firebasestorage.app",
-  messagingSenderId: "834131885181",
-  appId: "1:834131885181:web:a32518353d0e9627680514",
-  measurementId: "G-KB95QE8Y1V"
-};
-const app = initializeApp(firebaseConfig);
-const db = getFirestore(app);
-
-// ---------- generic helpers ----------
-const $ = (id)=>document.getElementById(id);
-const sleep = ms => new Promise(r=>setTimeout(r,ms));
-function uuid(){
-  return 'p_' + Math.random().toString(36).slice(2,10) + Date.now().toString(36).slice(-4);
-}
-let myId;
-try{
-  myId = localStorage.getItem('chahan_pid');
-  if(!myId){ myId = uuid(); localStorage.setItem('chahan_pid', myId); }
-}catch(e){ myId = uuid(); }
-
-// ---------- state ----------
-const HOME = 'home', SHIORI = 'shiori', GAME = 'game';
-let topState = 'loading';
-
-// ---------- intro / title flow ----------
-const titleWrap = $('titleWrap'), tapHint = $('tapHint');
-const bgFallback = $('bgFallback');
-const bgA = $('bgImageA'), bgB = $('bgImageB');
-const rainAudio = $('rainAudio'), clickAudio = $('clickAudio');
-const umbrellaBtn = $('umbrellaBtn');
-const honkeBtn = $('honkeBtn'), honkeModal = $('honkeModal'), honkeClose = $('honkeClose'), honkeIframe = $('honkeIframe');
-const lbarTop = $('lbarTop'), lbarBot = $('lbarBot');
-const shiori = $('shiori'), shioriClose = $('shioriClose');
-const chahan = $('chahan');
-
-window.addEventListener('load', ()=>{
-  setTimeout(()=>{ titleWrap.classList.add('in'); topState = 'title'; }, 700);
-});
-
-// ---------- bg image cycling ----------
-const bgImages = ['rain.png','rain1.png','rain2.png','rain3.png','rain4.png','rain5.png'];
-let bgIdx = 0;
-let activeIsA = true; // bgA is currently the "showing" layer
-function cycleBg(){
-  bgIdx = (bgIdx + 1) % bgImages.length;
-  const next = bgImages[bgIdx];
-  const incoming = activeIsA ? bgB : bgA;
-  const outgoing = activeIsA ? bgA : bgB;
-  // preload then crossfade
-  const tmp = new Image();
-  tmp.onload = ()=>{
-    incoming.src = next;
-    requestAnimationFrame(()=>{
-      incoming.classList.add('show');
-      outgoing.classList.remove('show');
-      activeIsA = !activeIsA;
-    });
-  };
-  tmp.onerror = ()=>{}; // missing file: skip silently
-  tmp.src = next;
-}
-
-// click zone listener: only cycles when on home AND not over a UI element
-$('clickZone').addEventListener('click', ()=>{
-  if(topState === 'home') cycleBg();
-});
-
-// ---------- YouTube IFrame audio ----------
-let ytPlayer = null, ytReady = false;
-const YT_AUDIO_ID = 'YAXTn0E-Zgo';
-(function loadYT(){
-  if(window.YT && window.YT.Player){ initYT(); return; }
-  const tag = document.createElement('script');
-  tag.src = 'https://www.youtube.com/iframe_api';
-  document.head.appendChild(tag);
-})();
-window.onYouTubeIframeAPIReady = ()=>initYT();
-function initYT(){
-  if(ytPlayer) return;
-  ytPlayer = new YT.Player('yt-audio-player', {
-    height:'1', width:'1', videoId: YT_AUDIO_ID,
-    playerVars:{ autoplay:0, controls:0, disablekb:1, fs:0, iv_load_policy:3, modestbranding:1, playsinline:1, rel:0, loop:1, playlist:YT_AUDIO_ID },
-    events:{
-      'onReady': ()=>{ ytReady = true; try{ ytPlayer.setVolume(0); }catch(e){} },
-      'onStateChange': (e)=>{ if(e.data === YT.PlayerState.ENDED){ try{ ytPlayer.seekTo(0); ytPlayer.playVideo(); }catch(err){} } }
-    }
-  });
-}
-function ytFadeVolume(target, duration){
-  if(!ytPlayer || !ytReady) return;
-  const t0 = performance.now();
-  let from = 0; try{ from = ytPlayer.getVolume() || 0; }catch(e){}
-  function step(now){
-    const t = Math.min(1,(now-t0)/duration);
-    const e = t<.5 ? 2*t*t : 1 - Math.pow(-2*t+2,2)/2;
-    try{ ytPlayer.setVolume(from + (target - from) * e); }catch(err){}
-    if(t<1) requestAnimationFrame(step);
-  }
-  requestAnimationFrame(step);
-}
-function fadeAudioVolume(audio, target, duration){
-  const t0 = performance.now();
-  const from = audio.volume || 0;
-  function step(now){
-    const t = Math.min(1,(now-t0)/duration);
-    const e = t<.5 ? 2*t*t : 1 - Math.pow(-2*t+2,2)/2;
-    audio.volume = Math.max(0, Math.min(1, from + (target - from) * e));
-    if(t<1) requestAnimationFrame(step);
-  }
-  requestAnimationFrame(step);
-}
-
-// ---------- start (first tap anywhere) ----------
-let started = false;
-function start(){
-  if(started) return;
-  if(topState !== 'title') return;
-  started = true; topState = 'starting';
-
-  titleWrap.classList.remove('in');
-  titleWrap.classList.add('out');
-  tapHint.classList.add('out');
-
-  bgA.classList.add('show');
-  bgFallback.classList.add('show');
-  $('rain-canvas').classList.add('show');
-  rainActive = true;
-
-  // rain.mp3
+<script>
+"use strict";
+(function(){
+  // ---------- helpers ----------
+  const $ = (id)=>document.getElementById(id);
+  const sleep = ms => new Promise(r=>setTimeout(r,ms));
+  function uuid(){ return 'p_' + Math.random().toString(36).slice(2,10) + Date.now().toString(36).slice(-4); }
+  function escapeHtml(s){ return String(s||'').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
+  let myId;
   try{
-    rainAudio.volume = 0;
-    const pr = rainAudio.play();
-    if(pr && pr.then) pr.then(()=>fadeAudioVolume(rainAudio, 0.55, 5000)).catch(()=>{});
-  }catch(e){}
+    myId = localStorage.getItem('chahan_pid');
+    if(!myId){ myId = uuid(); localStorage.setItem('chahan_pid', myId); }
+  }catch(e){ myId = uuid(); }
 
-  // YouTube audio
-  const tryYT = ()=>{
-    if(!ytPlayer || !ytReady){ setTimeout(tryYT, 300); return; }
-    try{ ytPlayer.setVolume(0); ytPlayer.playVideo(); setTimeout(()=>ytFadeVolume(55,5000), 400); }catch(e){}
-  };
-  tryYT();
+  console.log('[event] booted, myId =', myId);
 
-  setTimeout(()=>{
-    umbrellaBtn.classList.add('in');
-    honkeBtn.classList.add('in');
-    topState = 'home';
-  }, 2200);
-}
-['click','touchstart','keydown'].forEach(ev=>window.addEventListener(ev, start, {passive:true}));
+  // ---------- top-level state ----------
+  let topState = 'loading'; // loading | title | starting | home | shiori | game
 
-// ---------- ambient audio control (pause when overlays open) ----------
-function pauseAmbient(){
-  try{ if(!rainAudio.paused) rainAudio.pause(); }catch(e){}
-  if(ytPlayer && ytReady){ try{ if(ytPlayer.getPlayerState() === 1) ytPlayer.pauseVideo(); }catch(e){} }
-}
-function resumeAmbient(){
-  try{ const p = rainAudio.play(); if(p && p.catch) p.catch(()=>{}); }catch(e){}
-  if(ytPlayer && ytReady){ try{ ytPlayer.playVideo(); }catch(e){} }
-}
+  // ---------- elements ----------
+  const titleWrap = $('titleWrap'), tapHint = $('tapHint');
+  const bgFallback = $('bgFallback');
+  const bgA = $('bgImageA'), bgB = $('bgImageB');
+  const rainAudio = $('rainAudio'), clickAudio = $('clickAudio');
+  const umbrellaBtn = $('umbrellaBtn');
+  const honkeBtn = $('honkeBtn'), honkeModal = $('honkeModal'), honkeClose = $('honkeClose'), honkeIframe = $('honkeIframe');
+  const lbarTop = $('lbarTop'), lbarBot = $('lbarBot');
+  const shiori = $('shiori'), shioriClose = $('shioriClose');
+  const chahan = $('chahan');
 
-// ---------- 本家 modal ----------
-honkeBtn.addEventListener('click', (e)=>{
-  e.stopPropagation();
-  if(topState !== 'home') return;
-  pauseAmbient();
-  lbarTop.classList.add('in'); lbarBot.classList.add('in');
-  honkeIframe.src = `https://www.youtube.com/embed/VGksHFs04Rc?start=3&autoplay=1&rel=0&modestbranding=1&playsinline=1`;
-  honkeModal.classList.add('in');
-});
-function closeHonke(){
-  honkeModal.classList.remove('in');
-  lbarTop.classList.remove('in'); lbarBot.classList.remove('in');
-  setTimeout(()=>{ honkeIframe.src = ''; }, 700);
-  if(topState === 'home') resumeAmbient();
-}
-honkeClose.addEventListener('click', e=>{ e.stopPropagation(); closeHonke(); });
-honkeModal.addEventListener('click', e=>{ if(e.target === honkeModal) closeHonke(); });
-document.addEventListener('keydown', e=>{ if(e.key === 'Escape' && honkeModal.classList.contains('in')) closeHonke(); });
-
-// ---------- umbrella → しおり ----------
-umbrellaBtn.addEventListener('click', (e)=>{
-  e.stopPropagation();
-  if(topState !== 'home') return;
-  topState = SHIORI;
-  pauseAmbient();
-  shiori.classList.add('in');
-});
-shioriClose.addEventListener('click', e=>{ e.stopPropagation(); closeShiori(); });
-function closeShiori(){
-  shiori.classList.remove('in');
-  topState = 'home';
-  resumeAmbient();
-}
-
-// card clicks
-document.querySelectorAll('.shiori-card').forEach(card=>{
-  card.addEventListener('click', ()=>{
-    const which = card.dataset.card;
-    if(which === '1') openChahan();
-    // others: TODO future cards
+  window.addEventListener('load', ()=>{
+    setTimeout(()=>{
+      titleWrap.classList.add('in');
+      topState = 'title';
+      console.log('[event] title shown, ready for tap');
+    }, 700);
   });
-});
-
-// ---------- rain canvas (subtle, transparent clear) ----------
-const canvas = $('rain-canvas');
-const ctx = canvas.getContext('2d');
-let W=0,H=0,dpr=1, rainActive=false, drops=[];
-const LAYERS = [
-  { share:.30, sMin: 9,  sMax: 15, lMin: 5,  lMax: 13, oMin:.05, oMax:.12, wMin:.5, wMax:.7, slMin:-.4, slMax:-.9 },
-  { share:.40, sMin: 20, sMax: 34, lMin: 14, lMax: 30, oMin:.10, oMax:.22, wMin:.6, wMax:.9, slMin:-.7, slMax:-1.4 },
-  { share:.30, sMin: 42, sMax: 80, lMin: 30, lMax: 70, oMin:.22, oMax:.45, wMin:.9, wMax:1.3, slMin:-1.0, slMax:-2.0 },
-];
-function rand(a,b){return a+Math.random()*(b-a)}
-function makeDrop(L){return{x:Math.random()*W,y:Math.random()*H-H,len:rand(L.lMin,L.lMax),speed:rand(L.sMin,L.sMax),opacity:rand(L.oMin,L.oMax),width:rand(L.wMin,L.wMax),slant:rand(L.slMin,L.slMax),layer:L}}
-function initDrops(){drops=[];const baseCount=Math.min(420,Math.max(150,Math.floor(W*H/4800)));LAYERS.forEach(L=>{const n=Math.floor(baseCount*L.share);for(let i=0;i<n;i++) drops.push(makeDrop(L))})}
-function resize(){dpr=Math.min(2,window.devicePixelRatio||1);W=innerWidth;H=innerHeight;canvas.width=W*dpr;canvas.height=H*dpr;canvas.style.width=W+'px';canvas.style.height=H+'px';ctx.setTransform(1,0,0,1,0,0);ctx.scale(dpr,dpr);initDrops()}
-function tick(){
-  if(!rainActive){requestAnimationFrame(tick);return}
-  ctx.clearRect(0,0,W,H);
-  ctx.lineCap='round';
-  for(let i=0;i<drops.length;i++){
-    const d=drops[i];
-    ctx.lineWidth=d.width;
-    const x2=d.x+d.slant, y2=d.y+d.len;
-    const g = ctx.createLinearGradient(d.x,d.y,x2,y2);
-    g.addColorStop(0,'rgba(225,238,255,0)');
-    g.addColorStop(1,`rgba(230,240,255,${d.opacity})`);
-    ctx.strokeStyle=g;
-    ctx.beginPath(); ctx.moveTo(d.x,d.y); ctx.lineTo(x2,y2); ctx.stroke();
-    d.x += d.slant*.35; d.y += d.speed;
-    if(d.y > H){d.y=-d.len-rand(0,100);d.x=Math.random()*W;d.len=rand(d.layer.lMin,d.layer.lMax);d.speed=rand(d.layer.sMin,d.layer.sMax);d.opacity=rand(d.layer.oMin,d.layer.oMax);d.slant=rand(d.layer.slMin,d.layer.slMax)}
+  // also handle DOMContentLoaded as a backup in case 'load' is delayed
+  if(document.readyState === 'complete'){
+    setTimeout(()=>{ if(topState === 'loading'){ titleWrap.classList.add('in'); topState='title'; console.log('[event] title shown (immediate)'); } }, 700);
   }
-  requestAnimationFrame(tick);
-}
-let resizeT=null;
-window.addEventListener('resize',()=>{clearTimeout(resizeT);resizeT=setTimeout(resize,120)});
-resize();
-requestAnimationFrame(tick);
-bgA.addEventListener('error',()=>{ bgA.style.display='none'; });
 
-// =================================================================
-// CHAHAN GAME
-// =================================================================
-const ROLE_LABELS = ['下ごしらえ','炒める','仕上げる']; // index = slot (0 = 1P, etc.)
-const ROLE_TAGS   = ['1P','2P','3P'];
-const TIMER_TOTAL = 100;     // counts down from 100s
-const TIMER_VISIBLE_UNTIL = 50; // visible while > 50s remaining
-
-let myName = '';
-let chahanSubState = 'name'; // name | howto | lobby | play | results | photo
-let currentGameId = null;
-let currentGameSnap = null;
-let mySlot = -1;
-let unsubGame = null;
-let timerHandle = null;
-let timerStartMs = 0;
-let timerStopped = false;
-
-function showChahanScreen(id){
-  document.querySelectorAll('#chahan .gscr').forEach(s=>s.classList.remove('in'));
-  $(id).classList.add('in');
-}
-
-function openChahan(){
-  topState = GAME;
-  shiori.classList.remove('in');
-  chahan.classList.add('in');
-  // start at name screen unless we already have a name
-  chahanSubState = myName ? 'howto' : 'name';
-  showChahanScreen(chahanSubState === 'name' ? 'scrName' : 'scrHowto');
-}
-
-$('chahanBack').addEventListener('click', leaveChahan);
-async function leaveChahan(){
-  // detach listeners, leave any game
-  if(unsubGame){ try{ unsubGame(); }catch(e){} unsubGame = null; }
-  if(currentGameId && mySlot >= 0){
-    try{ await leaveGame(currentGameId, myId); }catch(e){}
-  }
-  currentGameId = null; mySlot = -1; currentGameSnap = null;
-  if(timerHandle){ clearInterval(timerHandle); timerHandle = null; }
-  chahan.classList.remove('in');
-  topState = 'home';
-  resumeAmbient();
-  // reset visual game bg
-  chahan.style.backgroundImage = '';
-}
-
-// ----- name screen -----
-const nameInput = $('nameInput'), nameSubmit = $('nameSubmit');
-nameInput.addEventListener('input', ()=>{
-  nameSubmit.disabled = nameInput.value.trim().length === 0;
-});
-nameInput.addEventListener('keydown', e=>{ if(e.key === 'Enter' && !nameSubmit.disabled) nameSubmit.click(); });
-nameSubmit.addEventListener('click', ()=>{
-  myName = nameInput.value.trim().slice(0,12);
-  if(!myName) return;
-  chahanSubState = 'howto';
-  showChahanScreen('scrHowto');
-});
-
-// ----- how-to screen -----
-$('playBtn').addEventListener('click', ()=>{
-  chahanSubState = 'lobby';
-  showChahanScreen('scrLobby');
-  joinOrCreateGame();
-});
-
-// ----- lobby (Firebase matchmaking) -----
-async function joinOrCreateGame(){
-  // try to find an existing waiting game with < 3 players
-  $('lobbyStatus').textContent = '仲 間 を 待 っ て い ま す';
-  $('lobbyStatus').classList.remove('ready');
-  try{
-    const q = query(collection(db, 'games'), where('status','==','waiting'), orderBy('createdAt','asc'), limit(5));
-    const snap = await getDocs(q);
-    let joined = false;
-    for(const d of snap.docs){
-      const data = d.data();
-      if((data.players || []).length < 3){
-        const ok = await tryJoin(d.id);
-        if(ok){ currentGameId = d.id; joined = true; break; }
-      }
-    }
-    if(!joined){
-      // create a new game with self as first player
-      const ref = await addDoc(collection(db,'games'), {
-        status:'waiting',
-        players:[{ id: myId, name: myName, slot: 0 }],
-        currentTurn: 0,
-        turnState: 'idle',
-        turnScores: [null,null,null],
-        createdAt: serverTimestamp()
+  // ---------- bg image cycling ----------
+  const bgImages = ['rain.png','rain1.png','rain2.png','rain3.png','rain4.png','rain5.png'];
+  let bgIdx = 0;
+  let activeIsA = true;
+  function cycleBg(){
+    bgIdx = (bgIdx + 1) % bgImages.length;
+    const next = bgImages[bgIdx];
+    const incoming = activeIsA ? bgB : bgA;
+    const outgoing = activeIsA ? bgA : bgB;
+    const tmp = new Image();
+    tmp.onload = ()=>{
+      incoming.src = next;
+      requestAnimationFrame(()=>{
+        incoming.classList.add('show');
+        outgoing.classList.remove('show');
+        activeIsA = !activeIsA;
       });
-      currentGameId = ref.id;
-      mySlot = 0;
-    }
-    listenGame(currentGameId);
-  }catch(err){
-    console.error(err);
-    $('lobbyStatus').textContent = '通 信 エ ラ ー — Firestore のルールを確認してください';
+    };
+    tmp.onerror = ()=>{ console.warn('[bg] missing:', next); };
+    tmp.src = next;
   }
-}
-
-async function tryJoin(gameId){
-  try{
-    const res = await runTransaction(db, async (tx)=>{
-      const ref = doc(db,'games',gameId);
-      const cur = await tx.get(ref);
-      if(!cur.exists()) return false;
-      const data = cur.data();
-      if(data.status !== 'waiting') return false;
-      const players = data.players || [];
-      if(players.length >= 3) return false;
-      if(players.find(p=>p.id === myId)) { mySlot = players.find(p=>p.id===myId).slot; return true; }
-      const slot = players.length;
-      players.push({ id: myId, name: myName, slot });
-      mySlot = slot;
-      const update = { players };
-      if(players.length === 3){ update.status = 'playing'; update.currentTurn = 0; update.turnState='idle'; }
-      tx.update(ref, update);
-      return true;
-    });
-    return res;
-  }catch(e){ console.error(e); return false; }
-}
-
-async function leaveGame(gameId, playerId){
-  try{
-    const ref = doc(db,'games',gameId);
-    await runTransaction(db, async tx=>{
-      const cur = await tx.get(ref);
-      if(!cur.exists()) return;
-      const data = cur.data();
-      const players = (data.players || []).filter(p => p.id !== playerId);
-      if(data.status === 'waiting'){
-        if(players.length === 0){
-          tx.delete(ref);
-        }else{
-          // re-slot remaining players starting from 0
-          players.forEach((p,i)=>{ p.slot = i; });
-          tx.update(ref, { players });
-        }
-      }else{
-        // mid-game leave: just mark left, keep game playable for spectators
-        tx.update(ref, { players });
-      }
-    });
-  }catch(e){ console.error(e); }
-}
-
-function listenGame(gameId){
-  if(unsubGame){ try{ unsubGame(); }catch(e){} }
-  const ref = doc(db,'games',gameId);
-  unsubGame = onSnapshot(ref, (snap)=>{
-    if(!snap.exists()){
-      $('lobbyStatus').textContent = '部 屋 が 閉 じ ら れ ま し た';
-      return;
-    }
-    const data = snap.data();
-    currentGameSnap = data;
-    // re-find my slot in case re-slotting
-    const me = (data.players || []).find(p => p.id === myId);
-    mySlot = me ? me.slot : -1;
-    if(chahanSubState === 'lobby'){
-      renderLobby(data);
-      if(data.status === 'playing'){ enterPlay(data); }
-    }else if(chahanSubState === 'play'){
-      renderPlay(data);
-    }
-  }, err => {
-    console.error(err);
-    $('lobbyStatus').textContent = '通 信 エ ラ ー';
+  $('clickZone').addEventListener('click', ()=>{
+    if(topState === 'home') cycleBg();
   });
-}
 
-function renderLobby(data){
-  const players = data.players || [];
-  // slot 0 = 1P (right), slot 1 = 2P (middle), slot 2 = 3P (left)
-  document.querySelectorAll('.slot-circle').forEach(circle=>{
-    const s = parseInt(circle.dataset.slot, 10);
-    const p = players.find(p=>p.slot === s);
-    circle.classList.toggle('filled', !!p);
-    circle.classList.toggle('mine', p && p.id === myId);
-    const plus = circle.querySelector('.plus');
-    let pname = circle.querySelector('.pname');
-    if(p){
-      if(plus) plus.style.display = 'none';
-      if(!pname){
-        pname = document.createElement('span'); pname.className = 'pname';
-        circle.appendChild(pname);
-      }
-      pname.textContent = p.name;
-    }else{
-      if(plus) plus.style.display = '';
-      if(pname) pname.remove();
-    }
-  });
-  if(players.length === 3){
-    $('lobbyStatus').textContent = '準 備 完 了';
-    $('lobbyStatus').classList.add('ready');
-  }else{
-    $('lobbyStatus').textContent = `あと ${3 - players.length} 人 待 機 中`;
-    $('lobbyStatus').classList.remove('ready');
-  }
-}
-
-// click an empty slot to take it
-document.querySelectorAll('.slot-circle').forEach(circle=>{
-  circle.addEventListener('click', async ()=>{
-    if(!currentGameId) return;
-    if(circle.classList.contains('filled')) return;
-    const targetSlot = parseInt(circle.dataset.slot, 10);
-    // only allow if i don't already have a slot, otherwise swap
+  // ---------- YouTube IFrame audio ----------
+  let ytPlayer = null, ytReady = false;
+  const YT_AUDIO_ID = 'YAXTn0E-Zgo';
+  (function loadYT(){
+    if(window.YT && window.YT.Player){ initYT(); return; }
+    const tag = document.createElement('script');
+    tag.src = 'https://www.youtube.com/iframe_api';
+    tag.onerror = ()=>console.warn('[yt] iframe API blocked, audio disabled');
+    document.head.appendChild(tag);
+  })();
+  window.onYouTubeIframeAPIReady = ()=>initYT();
+  function initYT(){
+    if(ytPlayer || !window.YT) return;
     try{
-      const ref = doc(db,'games',currentGameId);
-      await runTransaction(db, async tx=>{
-        const cur = await tx.get(ref); if(!cur.exists()) return;
-        const data = cur.data();
-        if(data.status !== 'waiting') return;
-        let players = data.players || [];
-        const me = players.find(p=>p.id===myId);
-        if(players.find(p=>p.slot===targetSlot)) return; // already taken (race)
-        if(me){
-          // swap to targetSlot
-          me.slot = targetSlot;
-        }else{
-          players.push({ id: myId, name: myName, slot: targetSlot });
+      ytPlayer = new YT.Player('yt-audio-player', {
+        height:'1', width:'1', videoId: YT_AUDIO_ID,
+        playerVars:{ autoplay:0, controls:0, disablekb:1, fs:0, iv_load_policy:3, modestbranding:1, playsinline:1, rel:0, loop:1, playlist:YT_AUDIO_ID },
+        events:{
+          'onReady': ()=>{ ytReady = true; try{ ytPlayer.setVolume(0); }catch(e){} },
+          'onStateChange': (e)=>{ if(e.data === YT.PlayerState.ENDED){ try{ ytPlayer.seekTo(0); ytPlayer.playVideo(); }catch(err){} } }
         }
-        const update = { players };
-        if(players.length === 3){ update.status='playing'; update.currentTurn=0; update.turnState='idle'; }
-        tx.update(ref, update);
       });
-    }catch(e){ console.error(e); }
-  });
-});
-// leave button on my slot
-document.querySelectorAll('.slot-leave').forEach(btn=>{
-  btn.addEventListener('click', async (e)=>{
+    }catch(e){ console.warn('[yt] init failed:', e); }
+  }
+  function ytFadeVolume(target, duration){
+    if(!ytPlayer || !ytReady) return;
+    const t0 = performance.now();
+    let from = 0; try{ from = ytPlayer.getVolume() || 0; }catch(e){}
+    function step(now){
+      const t = Math.min(1,(now-t0)/duration);
+      const e = t<.5 ? 2*t*t : 1 - Math.pow(-2*t+2,2)/2;
+      try{ ytPlayer.setVolume(from + (target - from) * e); }catch(err){}
+      if(t<1) requestAnimationFrame(step);
+    }
+    requestAnimationFrame(step);
+  }
+  function fadeAudioVolume(audio, target, duration){
+    const t0 = performance.now();
+    const from = audio.volume || 0;
+    function step(now){
+      const t = Math.min(1,(now-t0)/duration);
+      const e = t<.5 ? 2*t*t : 1 - Math.pow(-2*t+2,2)/2;
+      audio.volume = Math.max(0, Math.min(1, from + (target - from) * e));
+      if(t<1) requestAnimationFrame(step);
+    }
+    requestAnimationFrame(step);
+  }
+
+  // ---------- start (first tap anywhere) ----------
+  let started = false;
+  function start(){
+    if(started) return;
+    if(topState !== 'title'){ console.log('[event] start ignored, topState=', topState); return; }
+    started = true; topState = 'starting';
+    console.log('[event] starting experience');
+
+    titleWrap.classList.remove('in');
+    titleWrap.classList.add('out');
+    tapHint.classList.add('out');
+
+    bgA.classList.add('show');
+    bgFallback.classList.add('show');
+    $('rain-canvas').classList.add('show');
+    rainActive = true;
+
+    try{
+      rainAudio.volume = 0;
+      const pr = rainAudio.play();
+      if(pr && pr.then) pr.then(()=>fadeAudioVolume(rainAudio, 0.55, 5000)).catch(()=>{});
+    }catch(e){}
+
+    const tryYT = (n=0)=>{
+      if(!ytPlayer || !ytReady){
+        if(n < 30) setTimeout(()=>tryYT(n+1), 300);
+        return;
+      }
+      try{ ytPlayer.setVolume(0); ytPlayer.playVideo(); setTimeout(()=>ytFadeVolume(55,5000), 400); }catch(e){}
+    };
+    tryYT();
+
+    setTimeout(()=>{
+      umbrellaBtn.classList.add('in');
+      honkeBtn.classList.add('in');
+      topState = 'home';
+      console.log('[event] home ready, umbrella + honke active');
+    }, 2200);
+  }
+  ['click','touchstart','keydown'].forEach(ev=>window.addEventListener(ev, start, {passive:true}));
+
+  // ---------- ambient audio control ----------
+  function pauseAmbient(){
+    try{ if(!rainAudio.paused) rainAudio.pause(); }catch(e){}
+    if(ytPlayer && ytReady){ try{ if(ytPlayer.getPlayerState() === 1) ytPlayer.pauseVideo(); }catch(e){} }
+  }
+  function resumeAmbient(){
+    try{ const p = rainAudio.play(); if(p && p.catch) p.catch(()=>{}); }catch(e){}
+    if(ytPlayer && ytReady){ try{ ytPlayer.playVideo(); }catch(e){} }
+  }
+
+  // ---------- 本家 modal ----------
+  honkeBtn.addEventListener('click', (e)=>{
     e.stopPropagation();
-    if(!currentGameId) return;
-    await leaveGame(currentGameId, myId);
-    mySlot = -1;
-    // re-create or re-search
+    if(topState !== 'home') return;
+    pauseAmbient();
+    lbarTop.classList.add('in'); lbarBot.classList.add('in');
+    honkeIframe.src = `https://www.youtube.com/embed/VGksHFs04Rc?start=3&autoplay=1&rel=0&modestbranding=1&playsinline=1`;
+    honkeModal.classList.add('in');
+  });
+  function closeHonke(){
+    honkeModal.classList.remove('in');
+    lbarTop.classList.remove('in'); lbarBot.classList.remove('in');
+    setTimeout(()=>{ honkeIframe.src = ''; }, 700);
+    if(topState === 'home') resumeAmbient();
+  }
+  honkeClose.addEventListener('click', e=>{ e.stopPropagation(); closeHonke(); });
+  honkeModal.addEventListener('click', e=>{ if(e.target === honkeModal) closeHonke(); });
+  document.addEventListener('keydown', e=>{ if(e.key === 'Escape' && honkeModal.classList.contains('in')) closeHonke(); });
+
+  // ---------- umbrella → しおり ----------
+  umbrellaBtn.addEventListener('click', (e)=>{
+    e.stopPropagation();
+    console.log('[event] umbrella clicked, topState=', topState);
+    if(topState !== 'home') return;
+    topState = 'shiori';
+    pauseAmbient();
+    shiori.classList.add('in');
+  });
+  shioriClose.addEventListener('click', e=>{ e.stopPropagation(); closeShiori(); });
+  function closeShiori(){
+    shiori.classList.remove('in');
+    topState = 'home';
+    resumeAmbient();
+  }
+  document.querySelectorAll('.shiori-card').forEach(card=>{
+    card.addEventListener('click', ()=>{
+      const which = card.dataset.card;
+      if(which === '1') openChahan();
+    });
+  });
+
+  // ---------- rain canvas ----------
+  const canvas = $('rain-canvas');
+  const ctx = canvas.getContext('2d');
+  let W=0,H=0,dpr=1, rainActive=false, drops=[];
+  const LAYERS = [
+    { share:.30, sMin: 9,  sMax: 15, lMin: 5,  lMax: 13, oMin:.05, oMax:.12, wMin:.5, wMax:.7, slMin:-.4, slMax:-.9 },
+    { share:.40, sMin: 20, sMax: 34, lMin: 14, lMax: 30, oMin:.10, oMax:.22, wMin:.6, wMax:.9, slMin:-.7, slMax:-1.4 },
+    { share:.30, sMin: 42, sMax: 80, lMin: 30, lMax: 70, oMin:.22, oMax:.45, wMin:.9, wMax:1.3, slMin:-1.0, slMax:-2.0 },
+  ];
+  function rand(a,b){return a+Math.random()*(b-a)}
+  function makeDrop(L){return{x:Math.random()*W,y:Math.random()*H-H,len:rand(L.lMin,L.lMax),speed:rand(L.sMin,L.sMax),opacity:rand(L.oMin,L.oMax),width:rand(L.wMin,L.wMax),slant:rand(L.slMin,L.slMax),layer:L}}
+  function initDrops(){drops=[];const baseCount=Math.min(420,Math.max(150,Math.floor(W*H/4800)));LAYERS.forEach(L=>{const n=Math.floor(baseCount*L.share);for(let i=0;i<n;i++) drops.push(makeDrop(L))})}
+  function resize(){dpr=Math.min(2,window.devicePixelRatio||1);W=innerWidth;H=innerHeight;canvas.width=W*dpr;canvas.height=H*dpr;canvas.style.width=W+'px';canvas.style.height=H+'px';ctx.setTransform(1,0,0,1,0,0);ctx.scale(dpr,dpr);initDrops()}
+  function tick(){
+    if(!rainActive){requestAnimationFrame(tick);return}
+    ctx.clearRect(0,0,W,H);
+    ctx.lineCap='round';
+    for(let i=0;i<drops.length;i++){
+      const d=drops[i];
+      ctx.lineWidth=d.width;
+      const x2=d.x+d.slant, y2=d.y+d.len;
+      const g = ctx.createLinearGradient(d.x,d.y,x2,y2);
+      g.addColorStop(0,'rgba(225,238,255,0)');
+      g.addColorStop(1,`rgba(230,240,255,${d.opacity})`);
+      ctx.strokeStyle=g;
+      ctx.beginPath(); ctx.moveTo(d.x,d.y); ctx.lineTo(x2,y2); ctx.stroke();
+      d.x += d.slant*.35; d.y += d.speed;
+      if(d.y > H){d.y=-d.len-rand(0,100);d.x=Math.random()*W;d.len=rand(d.layer.lMin,d.layer.lMax);d.speed=rand(d.layer.sMin,d.layer.sMax);d.opacity=rand(d.layer.oMin,d.layer.oMax);d.slant=rand(d.layer.slMin,d.layer.slMax)}
+    }
+    requestAnimationFrame(tick);
+  }
+  let resizeT=null;
+  window.addEventListener('resize',()=>{clearTimeout(resizeT);resizeT=setTimeout(resize,120)});
+  resize();
+  requestAnimationFrame(tick);
+  bgA.addEventListener('error',()=>{ bgA.style.display='none'; });
+
+  // =================================================================
+  // Firebase (loaded only when chahan game opens, via dynamic import)
+  // =================================================================
+  const firebaseConfig = {
+    apiKey: "AIzaSyAvLqQhgJlZLpyhfAYEdp38inFuIoUrmjg",
+    authDomain: "offev-3c70f.firebaseapp.com",
+    projectId: "offev-3c70f",
+    storageBucket: "offev-3c70f.firebasestorage.app",
+    messagingSenderId: "834131885181",
+    appId: "1:834131885181:web:a32518353d0e9627680514",
+    measurementId: "G-KB95QE8Y1V"
+  };
+  let fb = null; // populated by ensureFirebase()
+  let firebaseLoadAttempted = false;
+  async function ensureFirebase(){
+    if(fb) return fb;
+    if(firebaseLoadAttempted) return null;
+    firebaseLoadAttempted = true;
+    console.log('[fb] loading firebase modules...');
+    try{
+      const [appMod, fsMod] = await Promise.all([
+        import('https://www.gstatic.com/firebasejs/12.13.0/firebase-app.js'),
+        import('https://www.gstatic.com/firebasejs/12.13.0/firebase-firestore.js')
+      ]);
+      const app = appMod.initializeApp(firebaseConfig);
+      const db = fsMod.getFirestore(app);
+      fb = Object.assign({ app, db }, fsMod);
+      console.log('[fb] ready');
+      return fb;
+    }catch(e){
+      console.error('[fb] failed to load:', e);
+      return null;
+    }
+  }
+
+  // =================================================================
+  // CHAHAN GAME
+  // =================================================================
+  const ROLE_TAGS = ['1P','2P','3P'];
+  const TIMER_TOTAL = 100;
+  const TIMER_VISIBLE_UNTIL = 50;
+
+  let myName = '';
+  let chahanSubState = 'name';
+  let currentGameId = null;
+  let currentGameSnap = null;
+  let mySlot = -1;
+  let unsubGame = null;
+  let timerHandle = null;
+  let timerStopped = false;
+
+  function showChahanScreen(id){
+    document.querySelectorAll('#chahan .gscr').forEach(s=>s.classList.remove('in'));
+    $(id).classList.add('in');
+  }
+
+  function openChahan(){
+    topState = 'game';
+    shiori.classList.remove('in');
+    chahan.classList.add('in');
+    chahanSubState = myName ? 'howto' : 'name';
+    showChahanScreen(chahanSubState === 'name' ? 'scrName' : 'scrHowto');
+  }
+
+  $('chahanBack').addEventListener('click', leaveChahan);
+  async function leaveChahan(){
+    if(unsubGame){ try{ unsubGame(); }catch(e){} unsubGame = null; }
+    if(currentGameId && mySlot >= 0 && fb){
+      try{ await leaveGame(currentGameId, myId); }catch(e){}
+    }
+    currentGameId = null; mySlot = -1; currentGameSnap = null;
+    if(timerHandle){ clearInterval(timerHandle); timerHandle = null; }
+    chahan.classList.remove('in');
+    chahan.style.backgroundImage = '';
+    topState = 'home';
+    resumeAmbient();
+  }
+
+  // ----- name -----
+  const nameInput = $('nameInput'), nameSubmit = $('nameSubmit');
+  nameInput.addEventListener('input', ()=>{ nameSubmit.disabled = nameInput.value.trim().length === 0; });
+  nameInput.addEventListener('keydown', e=>{ if(e.key === 'Enter' && !nameSubmit.disabled) nameSubmit.click(); });
+  nameSubmit.addEventListener('click', ()=>{
+    myName = nameInput.value.trim().slice(0,12);
+    if(!myName) return;
+    chahanSubState = 'howto';
+    showChahanScreen('scrHowto');
+  });
+
+  // ----- howto -----
+  $('playBtn').addEventListener('click', ()=>{
     chahanSubState = 'lobby';
+    showChahanScreen('scrLobby');
     joinOrCreateGame();
   });
-});
 
-// ----- play screen -----
-async function enterPlay(data){
-  chahanSubState = 'play';
-  showChahanScreen('scrPlay');
-  renderPlay(data);
-}
-function bgForTurn(turn){ return ['1p.png','2p.png','3p.png'][turn] || 'rain.png'; }
-
-function renderPlay(data){
-  if(!data) return;
-  const players = (data.players || []).slice().sort((a,b)=>a.slot - b.slot);
-  // header: show all players LtoR by slot, with status
-  const hdr = $('playHeader'); hdr.innerHTML = '';
-  players.forEach(p=>{
-    const isCurrent = (p.slot === data.currentTurn);
-    const isMe = p.id === myId;
-    const ts = data.turnScores || [null,null,null];
-    const status = (ts[p.slot] != null) ? '完 了' : (isCurrent ? '料 理 中' : '観 戦 中');
-    const div = document.createElement('div');
-    div.className = 'play-name-tag' + (isCurrent ? ' active' : '');
-    div.innerHTML = `<div class="pn-tag">(${ROLE_TAGS[p.slot]})</div><div class="pn-name">${escapeHtml(p.name)}${isMe?' ·':''}</div><div class="pn-status">${status}</div><div class="pn-score">${ts[p.slot]!=null ? ts[p.slot] : ''}</div>`;
-    hdr.appendChild(div);
-  });
-
-  // current player block (left)
-  const cur = players.find(p=>p.slot === data.currentTurn);
-  $('pcName').textContent = cur ? cur.name : '―';
-  const total = (data.turnScores || []).reduce((s,v)=>s + (v||0), 0);
-  $('pcTotal').textContent = total;
-
-  // bg by current turn
-  chahan.style.backgroundImage = `url('${bgForTurn(data.currentTurn)}')`;
-  chahan.style.backgroundSize = 'cover';
-  chahan.style.backgroundPosition = 'center';
-
-  // action button: only my slot can play when it's my turn
-  const isMyTurn = (mySlot === data.currentTurn);
-  const turnDone = (data.turnScores || [])[data.currentTurn] != null;
-  const playWatching = $('playWatching');
-  const actionBtn = $('actionBtn');
-  if(isMyTurn && !turnDone && data.turnState !== 'running'){
-    actionBtn.style.display = '';
-    actionBtn.disabled = false;
-    actionBtn.classList.remove('stop');
-    actionBtn.textContent = 'S T A R T';
-    playWatching.style.display = 'none';
-    $('timerWrap').classList.remove('hidden');
-  }else if(isMyTurn && data.turnState === 'running'){
-    actionBtn.style.display = '';
-    actionBtn.disabled = false;
-    actionBtn.classList.add('stop');
-    actionBtn.textContent = 'S T O P';
-    playWatching.style.display = 'none';
-  }else{
-    actionBtn.style.display = 'none';
-    playWatching.style.display = '';
-  }
-
-  // when turn is running, sync timer with timerStart from server
-  if(data.turnState === 'running' && data.timerStart){
-    if(!timerHandle){
-      // shared start time across clients
-      const startMs = data.timerStart.toMillis ? data.timerStart.toMillis() : Date.now();
-      runTimer(startMs);
+  // ----- lobby -----
+  async function joinOrCreateGame(){
+    $('lobbyStatus').textContent = '通信を準備しています…';
+    $('lobbyStatus').classList.remove('ready');
+    const f = await ensureFirebase();
+    if(!f){
+      $('lobbyStatus').textContent = 'Firebase が読み込めません（オフライン or CDNブロック）';
+      return;
     }
-  }else if(data.turnState !== 'running' && timerHandle){
-    clearInterval(timerHandle); timerHandle = null;
-  }
-
-  // result of the latest finished turn
-  const lastDoneSlot = (data.turnScores || []).map((v,i)=>v!=null?i:-1).filter(i=>i>=0).pop();
-  if(lastDoneSlot != null && lastDoneSlot >= 0 && data.turnState === 'idle'){
-    const off = data.turnOffsets ? data.turnOffsets[lastDoneSlot] : null;
-    const sc = data.turnScores[lastDoneSlot];
-    $('turnResult').innerHTML = `<span>${players.find(p=>p.slot===lastDoneSlot)?.name || ''} ：</span><span class="off">${off!=null ? (off>0?'+':'') + off.toFixed(1)+'秒' : ''}</span><span> → </span><span class="scr">${sc}点</span>`;
-  }
-
-  // when all 3 turns done, transition to results
-  if(data.status === 'finished' || (data.turnScores || []).every(v=>v != null)){
-    setTimeout(()=>showResults(data), 1800);
-  }
-}
-
-function runTimer(startMs){
-  const FG = $('timerFg');
-  const NUM = $('timerNum');
-  const wrap = $('timerWrap');
-  const C = 2 * Math.PI * 46; // ~289
-  FG.setAttribute('stroke-dasharray', C.toFixed(2));
-  timerStopped = false;
-  timerHandle = setInterval(()=>{
-    const elapsed = (Date.now() - startMs) / 1000;
-    const remaining = TIMER_TOTAL - elapsed;
-    if(remaining > TIMER_VISIBLE_UNTIL){
-      wrap.classList.remove('hidden');
-      NUM.textContent = Math.max(0, Math.ceil(remaining));
-      const ratio = Math.max(0, remaining / TIMER_TOTAL);
-      FG.setAttribute('stroke-dashoffset', (C * (1 - ratio)).toFixed(2));
-    }else{
-      wrap.classList.add('hidden');
+    $('lobbyStatus').textContent = '仲 間 を 待 っ て い ま す';
+    try{
+      const q = f.query(f.collection(f.db, 'games'),
+        f.where('status','==','waiting'),
+        f.orderBy('createdAt','asc'),
+        f.limit(5));
+      const snap = await f.getDocs(q);
+      let joined = false;
+      for(const d of snap.docs){
+        const data = d.data();
+        if((data.players || []).length < 3){
+          const ok = await tryJoin(d.id);
+          if(ok){ currentGameId = d.id; joined = true; break; }
+        }
+      }
+      if(!joined){
+        const ref = await f.addDoc(f.collection(f.db,'games'), {
+          status:'waiting',
+          players:[{ id: myId, name: myName, slot: 0 }],
+          currentTurn: 0,
+          turnState: 'idle',
+          turnScores: [null,null,null],
+          createdAt: f.serverTimestamp()
+        });
+        currentGameId = ref.id;
+        mySlot = 0;
+      }
+      listenGame(currentGameId);
+    }catch(err){
+      console.error('[fb]', err);
+      $('lobbyStatus').textContent = '通信エラー — Firestoreのルールを確認してください';
     }
-  }, 80);
-}
+  }
 
-$('actionBtn').addEventListener('click', async ()=>{
-  if(!currentGameSnap || !currentGameId) return;
-  if(mySlot !== currentGameSnap.currentTurn) return;
-  if(currentGameSnap.turnState === 'idle'){
-    // START — set timerStart on server
+  async function tryJoin(gameId){
+    const f = fb; if(!f) return false;
     try{
-      await updateDoc(doc(db,'games',currentGameId), {
-        turnState: 'running',
-        timerStart: serverTimestamp()
-      });
-    }catch(e){ console.error(e); }
-  }else if(currentGameSnap.turnState === 'running'){
-    // STOP — record offset and score
-    if(timerStopped) return;
-    timerStopped = true;
-    const startMs = currentGameSnap.timerStart && currentGameSnap.timerStart.toMillis ? currentGameSnap.timerStart.toMillis() : Date.now();
-    const elapsed = (Date.now() - startMs) / 1000;
-    const off = TIMER_TOTAL - elapsed;  // positive if stopped early, negative if late
-    // closer to 0 = better. score = max(0, 100 - |off| * 10)
-    const score = Math.max(0, Math.round(100 - Math.abs(off) * 10));
-
-    try{
-      const ref = doc(db,'games',currentGameId);
-      await runTransaction(db, async tx=>{
-        const cur = await tx.get(ref); if(!cur.exists()) return;
-        const d = cur.data();
-        const ts = (d.turnScores || [null,null,null]).slice();
-        const tos = (d.turnOffsets || [null,null,null]).slice();
-        ts[d.currentTurn] = score;
-        tos[d.currentTurn] = Number(off.toFixed(1));
-        const next = d.currentTurn + 1;
-        const update = { turnScores: ts, turnOffsets: tos, turnState: 'idle' };
-        if(next >= 3){ update.status = 'finished'; }
-        else { update.currentTurn = next; }
+      return await f.runTransaction(f.db, async (tx)=>{
+        const ref = f.doc(f.db,'games',gameId);
+        const cur = await tx.get(ref);
+        if(!cur.exists()) return false;
+        const data = cur.data();
+        if(data.status !== 'waiting') return false;
+        const players = data.players || [];
+        if(players.length >= 3) return false;
+        if(players.find(p=>p.id === myId)){ mySlot = players.find(p=>p.id===myId).slot; return true; }
+        const slot = players.length;
+        players.push({ id: myId, name: myName, slot });
+        mySlot = slot;
+        const update = { players };
+        if(players.length === 3){ update.status = 'playing'; update.currentTurn = 0; update.turnState='idle'; }
         tx.update(ref, update);
+        return true;
+      });
+    }catch(e){ console.error(e); return false; }
+  }
+
+  async function leaveGame(gameId, playerId){
+    const f = fb; if(!f) return;
+    try{
+      const ref = f.doc(f.db,'games',gameId);
+      await f.runTransaction(f.db, async tx=>{
+        const cur = await tx.get(ref);
+        if(!cur.exists()) return;
+        const data = cur.data();
+        const players = (data.players || []).filter(p => p.id !== playerId);
+        if(data.status === 'waiting'){
+          if(players.length === 0){ tx.delete(ref); }
+          else{
+            players.forEach((p,i)=>{ p.slot = i; });
+            tx.update(ref, { players });
+          }
+        }else{
+          tx.update(ref, { players });
+        }
       });
     }catch(e){ console.error(e); }
   }
-});
 
-// ----- results -----
-function classifyScore(total){
-  if(total >= 270) return { img:'scr1.png', comment:'完 璧 な 三 人 の 連 携 — 中 華 神 の 域' };
-  if(total >= 220) return { img:'scr2.png', comment:'息 ぴ っ た り の 上 級 コ ン ビ' };
-  if(total >= 160) return { img:'scr3.png', comment:'ま あ ま あ の 仕 上 が り' };
-  if(total >= 100) return { img:'scr4.png', comment:'う ー ん … 練 習 が 必 要 で す' };
-  return { img:'scr5.png', comment:'お し い ！ 次 こ そ' };
-}
-let resultsImageUrl = '';
-function showResults(data){
-  if(chahanSubState === 'results') return;
-  chahanSubState = 'results';
-  showChahanScreen('scrResults');
-  $('resultsBox').classList.add('in');
+  function listenGame(gameId){
+    if(!fb) return;
+    if(unsubGame){ try{ unsubGame(); }catch(e){} }
+    const ref = fb.doc(fb.db,'games',gameId);
+    unsubGame = fb.onSnapshot(ref, (snap)=>{
+      if(!snap.exists()){
+        $('lobbyStatus').textContent = '部 屋 が 閉 じ ら れ ま し た';
+        return;
+      }
+      const data = snap.data();
+      currentGameSnap = data;
+      const me = (data.players || []).find(p => p.id === myId);
+      mySlot = me ? me.slot : -1;
+      if(chahanSubState === 'lobby'){
+        renderLobby(data);
+        if(data.status === 'playing'){ enterPlay(data); }
+      }else if(chahanSubState === 'play'){
+        renderPlay(data);
+      }
+    }, err => {
+      console.error('[fb] onSnapshot:', err);
+      $('lobbyStatus').textContent = '通 信 エ ラ ー';
+    });
+  }
 
-  const players = (data.players || []).slice().sort((a,b)=>a.slot-b.slot);
-  const ts = data.turnScores || [];
-  const total = ts.reduce((s,v)=>s+(v||0),0);
-  const { img, comment } = classifyScore(total);
-  resultsImageUrl = img;
+  function renderLobby(data){
+    const players = data.players || [];
+    document.querySelectorAll('.slot-circle').forEach(circle=>{
+      const s = parseInt(circle.dataset.slot, 10);
+      const p = players.find(p=>p.slot === s);
+      circle.classList.toggle('filled', !!p);
+      circle.classList.toggle('mine', p && p.id === myId);
+      const plus = circle.querySelector('.plus');
+      let pname = circle.querySelector('.pname');
+      if(p){
+        if(plus) plus.style.display = 'none';
+        if(!pname){
+          pname = document.createElement('span'); pname.className = 'pname';
+          circle.appendChild(pname);
+        }
+        pname.textContent = p.name;
+      }else{
+        if(plus) plus.style.display = '';
+        if(pname) pname.remove();
+      }
+    });
+    if(players.length === 3){
+      $('lobbyStatus').textContent = '準 備 完 了';
+      $('lobbyStatus').classList.add('ready');
+    }else{
+      $('lobbyStatus').textContent = `あと ${3 - players.length} 人 待 機 中`;
+      $('lobbyStatus').classList.remove('ready');
+    }
+  }
 
-  $('rImg').style.backgroundImage = `url('${img}')`;
-  $('rComment').textContent = comment;
-
-  const sc = $('rScores'); sc.innerHTML = '';
-  players.forEach(p=>{
-    const v = ts[p.slot];
-    sc.innerHTML += `<div class="rs-block"><div class="rsl">${ROLE_TAGS[p.slot]}</div><div class="rsv">${v!=null ? v : '-'}</div><div class="rsn">${escapeHtml(p.name)}</div></div>`;
+  document.querySelectorAll('.slot-circle').forEach(circle=>{
+    circle.addEventListener('click', async ()=>{
+      if(!currentGameId || !fb) return;
+      if(circle.classList.contains('filled')) return;
+      const targetSlot = parseInt(circle.dataset.slot, 10);
+      try{
+        const ref = fb.doc(fb.db,'games',currentGameId);
+        await fb.runTransaction(fb.db, async tx=>{
+          const cur = await tx.get(ref); if(!cur.exists()) return;
+          const data = cur.data();
+          if(data.status !== 'waiting') return;
+          let players = data.players || [];
+          const me = players.find(p=>p.id===myId);
+          if(players.find(p=>p.slot===targetSlot)) return;
+          if(me){ me.slot = targetSlot; }
+          else{ players.push({ id: myId, name: myName, slot: targetSlot }); }
+          const update = { players };
+          if(players.length === 3){ update.status='playing'; update.currentTurn=0; update.turnState='idle'; }
+          tx.update(ref, update);
+        });
+      }catch(e){ console.error(e); }
+    });
   });
-  sc.innerHTML += `<div class="rs-block total"><div class="rsl">total</div><div class="rsv">${total}</div></div>`;
-}
+  document.querySelectorAll('.slot-leave').forEach(btn=>{
+    btn.addEventListener('click', async (e)=>{
+      e.stopPropagation();
+      if(!currentGameId || !fb) return;
+      await leaveGame(currentGameId, myId);
+      mySlot = -1;
+      chahanSubState = 'lobby';
+      joinOrCreateGame();
+    });
+  });
 
-$('toPhotoBtn').addEventListener('click', ()=>openPhoto());
-$('resultsHomeBtn').addEventListener('click', leaveChahan);
+  // ----- play -----
+  async function enterPlay(data){
+    chahanSubState = 'play';
+    showChahanScreen('scrPlay');
+    renderPlay(data);
+  }
+  function bgForTurn(turn){ return ['1p.png','2p.png','3p.png'][turn] || 'rain.png'; }
 
-// ----- photo composite -----
-const photoCanvas = $('photoCanvas');
-const pctx = photoCanvas.getContext('2d');
-let userImg = null;
-let resultImg = null;
-function openPhoto(){
-  chahanSubState = 'photo';
-  showChahanScreen('scrPhoto');
-  // preload result image
-  resultImg = new Image();
-  resultImg.crossOrigin = 'anonymous';
-  resultImg.onload = ()=>{ if(userImg) renderPhoto(); };
-  resultImg.src = resultsImageUrl;
-  $('savePhotoBtn').disabled = true;
-}
-$('fileInput').addEventListener('change', e=>{
-  const f = e.target.files && e.target.files[0]; if(!f) return;
-  const url = URL.createObjectURL(f);
-  userImg = new Image();
-  userImg.onload = ()=>{ renderPhoto(); URL.revokeObjectURL(url); };
-  userImg.src = url;
-});
+  function renderPlay(data){
+    if(!data) return;
+    const players = (data.players || []).slice().sort((a,b)=>a.slot - b.slot);
+    const hdr = $('playHeader'); hdr.innerHTML = '';
+    players.forEach(p=>{
+      const isCurrent = (p.slot === data.currentTurn);
+      const isMe = p.id === myId;
+      const ts = data.turnScores || [null,null,null];
+      const status = (ts[p.slot] != null) ? '完 了' : (isCurrent ? '料 理 中' : '観 戦 中');
+      const div = document.createElement('div');
+      div.className = 'play-name-tag' + (isCurrent ? ' active' : '');
+      div.innerHTML = `<div class="pn-tag">(${ROLE_TAGS[p.slot]})</div><div class="pn-name">${escapeHtml(p.name)}${isMe?' ·':''}</div><div class="pn-status">${status}</div><div class="pn-score">${ts[p.slot]!=null ? ts[p.slot] : ''}</div>`;
+      hdr.appendChild(div);
+    });
 
-function renderPhoto(){
-  if(!userImg) return;
-  // canvas sized to user image
-  const stage = photoCanvas.parentElement;
-  const stageW = stage.clientWidth, stageH = stage.clientHeight;
-  // Fit user image to stage
-  const ar = userImg.width / userImg.height;
-  let cw = stageW, ch = stageH;
-  if(stageW / stageH > ar){ cw = stageH * ar; ch = stageH; } else { cw = stageW; ch = stageW / ar; }
-  photoCanvas.width = userImg.width;
-  photoCanvas.height = userImg.height;
-  photoCanvas.style.width = cw+'px';
-  photoCanvas.style.height = ch+'px';
+    const cur = players.find(p=>p.slot === data.currentTurn);
+    $('pcName').textContent = cur ? cur.name : '―';
+    const total = (data.turnScores || []).reduce((s,v)=>s + (v||0), 0);
+    $('pcTotal').textContent = total;
 
-  // 1. paint user image
-  pctx.clearRect(0,0,photoCanvas.width, photoCanvas.height);
-  pctx.drawImage(userImg, 0, 0);
+    chahan.style.backgroundImage = `url('${bgForTurn(data.currentTurn)}')`;
+    chahan.style.backgroundSize = 'cover';
+    chahan.style.backgroundPosition = 'center';
+    chahan.style.backgroundRepeat = 'no-repeat';
 
-  // 2. find red region (rough chroma-key on red)
-  const idata = pctx.getImageData(0,0,photoCanvas.width, photoCanvas.height);
-  const px = idata.data;
-  let minX=photoCanvas.width, minY=photoCanvas.height, maxX=0, maxY=0;
-  let redCount = 0;
-  for(let y=0;y<photoCanvas.height;y++){
-    for(let x=0;x<photoCanvas.width;x++){
-      const i = (y * photoCanvas.width + x) * 4;
-      const r=px[i], g=px[i+1], b=px[i+2];
-      // detect red: r dominant, g/b low
-      if(r > 140 && g < 110 && b < 110 && (r - Math.max(g,b)) > 40){
-        px[i+3] = 0; // transparent
-        if(x<minX) minX=x; if(y<minY) minY=y;
-        if(x>maxX) maxX=x; if(y>maxY) maxY=y;
-        redCount++;
+    const isMyTurn = (mySlot === data.currentTurn);
+    const turnDone = (data.turnScores || [])[data.currentTurn] != null;
+    const playWatching = $('playWatching');
+    const actionBtn = $('actionBtn');
+    if(isMyTurn && !turnDone && data.turnState !== 'running'){
+      actionBtn.style.display = '';
+      actionBtn.disabled = false;
+      actionBtn.classList.remove('stop');
+      actionBtn.textContent = 'S T A R T';
+      playWatching.style.display = 'none';
+      $('timerWrap').classList.remove('hidden');
+    }else if(isMyTurn && data.turnState === 'running'){
+      actionBtn.style.display = '';
+      actionBtn.disabled = false;
+      actionBtn.classList.add('stop');
+      actionBtn.textContent = 'S T O P';
+      playWatching.style.display = 'none';
+    }else{
+      actionBtn.style.display = 'none';
+      playWatching.style.display = '';
+    }
+
+    if(data.turnState === 'running' && data.timerStart){
+      if(!timerHandle){
+        const startMs = data.timerStart.toMillis ? data.timerStart.toMillis() : Date.now();
+        runTimer(startMs);
+      }
+    }else if(data.turnState !== 'running' && timerHandle){
+      clearInterval(timerHandle); timerHandle = null;
+    }
+
+    const lastDoneSlot = (data.turnScores || []).map((v,i)=>v!=null?i:-1).filter(i=>i>=0).pop();
+    if(lastDoneSlot != null && lastDoneSlot >= 0 && data.turnState === 'idle'){
+      const off = data.turnOffsets ? data.turnOffsets[lastDoneSlot] : null;
+      const sc = data.turnScores[lastDoneSlot];
+      $('turnResult').innerHTML = `<span>${escapeHtml(players.find(p=>p.slot===lastDoneSlot)?.name || '')} ：</span><span class="off">${off!=null ? (off>0?'+':'') + off.toFixed(1)+'秒' : ''}</span><span> → </span><span class="scr">${sc}点</span>`;
+    }
+
+    if(data.status === 'finished' || (data.turnScores || []).every(v=>v != null)){
+      setTimeout(()=>showResults(data), 1800);
+    }
+  }
+
+  function runTimer(startMs){
+    const FG = $('timerFg');
+    const NUM = $('timerNum');
+    const wrap = $('timerWrap');
+    const C = 2 * Math.PI * 46;
+    FG.setAttribute('stroke-dasharray', C.toFixed(2));
+    timerStopped = false;
+    timerHandle = setInterval(()=>{
+      const elapsed = (Date.now() - startMs) / 1000;
+      const remaining = TIMER_TOTAL - elapsed;
+      if(remaining > TIMER_VISIBLE_UNTIL){
+        wrap.classList.remove('hidden');
+        NUM.textContent = Math.max(0, Math.ceil(remaining));
+        const ratio = Math.max(0, remaining / TIMER_TOTAL);
+        FG.setAttribute('stroke-dashoffset', (C * (1 - ratio)).toFixed(2));
+      }else{
+        wrap.classList.add('hidden');
+      }
+    }, 80);
+  }
+
+  $('actionBtn').addEventListener('click', async ()=>{
+    if(!currentGameSnap || !currentGameId || !fb) return;
+    if(mySlot !== currentGameSnap.currentTurn) return;
+    if(currentGameSnap.turnState === 'idle'){
+      try{
+        await fb.updateDoc(fb.doc(fb.db,'games',currentGameId), {
+          turnState: 'running',
+          timerStart: fb.serverTimestamp()
+        });
+      }catch(e){ console.error(e); }
+    }else if(currentGameSnap.turnState === 'running'){
+      if(timerStopped) return;
+      timerStopped = true;
+      const startMs = currentGameSnap.timerStart && currentGameSnap.timerStart.toMillis ? currentGameSnap.timerStart.toMillis() : Date.now();
+      const elapsed = (Date.now() - startMs) / 1000;
+      const off = TIMER_TOTAL - elapsed;
+      const score = Math.max(0, Math.round(100 - Math.abs(off) * 10));
+      try{
+        const ref = fb.doc(fb.db,'games',currentGameId);
+        await fb.runTransaction(fb.db, async tx=>{
+          const cur = await tx.get(ref); if(!cur.exists()) return;
+          const d = cur.data();
+          const ts = (d.turnScores || [null,null,null]).slice();
+          const tos = (d.turnOffsets || [null,null,null]).slice();
+          ts[d.currentTurn] = score;
+          tos[d.currentTurn] = Number(off.toFixed(1));
+          const next = d.currentTurn + 1;
+          const update = { turnScores: ts, turnOffsets: tos, turnState: 'idle' };
+          if(next >= 3){ update.status = 'finished'; }
+          else { update.currentTurn = next; }
+          tx.update(ref, update);
+        });
+      }catch(e){ console.error(e); }
+    }
+  });
+
+  function classifyScore(total){
+    if(total >= 270) return { img:'scr1.png', comment:'完 璧 な 三 人 の 連 携 — 中 華 神 の 域' };
+    if(total >= 220) return { img:'scr2.png', comment:'息 ぴ っ た り の 上 級 コ ン ビ' };
+    if(total >= 160) return { img:'scr3.png', comment:'ま あ ま あ の 仕 上 が り' };
+    if(total >= 100) return { img:'scr4.png', comment:'う ー ん … 練 習 が 必 要 で す' };
+    return { img:'scr5.png', comment:'お し い ！ 次 こ そ' };
+  }
+  let resultsImageUrl = '';
+  function showResults(data){
+    if(chahanSubState === 'results') return;
+    chahanSubState = 'results';
+    showChahanScreen('scrResults');
+    $('resultsBox').classList.add('in');
+    const players = (data.players || []).slice().sort((a,b)=>a.slot-b.slot);
+    const ts = data.turnScores || [];
+    const total = ts.reduce((s,v)=>s+(v||0),0);
+    const { img, comment } = classifyScore(total);
+    resultsImageUrl = img;
+    $('rImg').style.backgroundImage = `url('${img}')`;
+    $('rComment').textContent = comment;
+    const sc = $('rScores'); sc.innerHTML = '';
+    players.forEach(p=>{
+      const v = ts[p.slot];
+      sc.innerHTML += `<div class="rs-block"><div class="rsl">${ROLE_TAGS[p.slot]}</div><div class="rsv">${v!=null ? v : '-'}</div><div class="rsn">${escapeHtml(p.name)}</div></div>`;
+    });
+    sc.innerHTML += `<div class="rs-block total"><div class="rsl">total</div><div class="rsv">${total}</div></div>`;
+  }
+
+  $('toPhotoBtn').addEventListener('click', ()=>openPhoto());
+  $('resultsHomeBtn').addEventListener('click', leaveChahan);
+
+  // ----- photo composite -----
+  const photoCanvas = $('photoCanvas');
+  const pctx = photoCanvas.getContext('2d');
+  let userImg = null;
+  let resultImg = null;
+  function openPhoto(){
+    chahanSubState = 'photo';
+    showChahanScreen('scrPhoto');
+    resultImg = new Image();
+    resultImg.crossOrigin = 'anonymous';
+    resultImg.onload = ()=>{ if(userImg) renderPhoto(); };
+    resultImg.src = resultsImageUrl;
+    $('savePhotoBtn').disabled = true;
+  }
+  $('fileInput').addEventListener('change', e=>{
+    const f = e.target.files && e.target.files[0]; if(!f) return;
+    const url = URL.createObjectURL(f);
+    userImg = new Image();
+    userImg.onload = ()=>{ renderPhoto(); URL.revokeObjectURL(url); };
+    userImg.src = url;
+  });
+
+  function renderPhoto(){
+    if(!userImg) return;
+    const stage = photoCanvas.parentElement;
+    const stageW = stage.clientWidth, stageH = stage.clientHeight;
+    const ar = userImg.width / userImg.height;
+    let cw = stageW, ch = stageH;
+    if(stageW / stageH > ar){ cw = stageH * ar; ch = stageH; } else { cw = stageW; ch = stageW / ar; }
+    photoCanvas.width = userImg.width;
+    photoCanvas.height = userImg.height;
+    photoCanvas.style.width = cw+'px';
+    photoCanvas.style.height = ch+'px';
+    pctx.clearRect(0,0,photoCanvas.width, photoCanvas.height);
+    pctx.drawImage(userImg, 0, 0);
+
+    const idata = pctx.getImageData(0,0,photoCanvas.width, photoCanvas.height);
+    const px = idata.data;
+    let minX=photoCanvas.width, minY=photoCanvas.height, maxX=0, maxY=0;
+    let redCount = 0;
+    for(let y=0;y<photoCanvas.height;y++){
+      for(let x=0;x<photoCanvas.width;x++){
+        const i = (y * photoCanvas.width + x) * 4;
+        const r=px[i], g=px[i+1], b=px[i+2];
+        if(r > 140 && g < 110 && b < 110 && (r - Math.max(g,b)) > 40){
+          px[i+3] = 0;
+          if(x<minX) minX=x; if(y<minY) minY=y;
+          if(x>maxX) maxX=x; if(y>maxY) maxY=y;
+          redCount++;
+        }
       }
     }
+    pctx.putImageData(idata, 0, 0);
+
+    if(redCount > 50 && resultImg && resultImg.complete && resultImg.naturalWidth){
+      const rw = maxX - minX, rh = maxY - minY;
+      const off = document.createElement('canvas');
+      off.width = photoCanvas.width; off.height = photoCanvas.height;
+      const octx = off.getContext('2d');
+      const ir = resultImg.width / resultImg.height;
+      const br = rw / rh;
+      let dw, dh, dx, dy;
+      if(ir > br){ dh = rh; dw = rh * ir; dx = minX + (rw - dw)/2; dy = minY; }
+      else      { dw = rw; dh = rw / ir; dx = minX; dy = minY + (rh - dh)/2; }
+      octx.drawImage(resultImg, dx, dy, dw, dh);
+      octx.drawImage(photoCanvas, 0, 0);
+      pctx.clearRect(0,0,photoCanvas.width, photoCanvas.height);
+      pctx.drawImage(off, 0, 0);
+      $('savePhotoBtn').disabled = false;
+    }else{
+      $('savePhotoBtn').disabled = redCount > 50 ? false : true;
+    }
   }
-  pctx.putImageData(idata, 0, 0);
 
-  // 3. composite result image into the red region (behind the photo)
-  // Build a final canvas: result image fitted to red bbox, then user image (with red transparent) on top
-  if(redCount > 50 && resultImg && resultImg.complete && resultImg.naturalWidth){
-    const rw = maxX - minX, rh = maxY - minY;
-    // create offscreen canvas to layer correctly
-    const off = document.createElement('canvas');
-    off.width = photoCanvas.width; off.height = photoCanvas.height;
-    const octx = off.getContext('2d');
-    // result image fills bbox preserving aspect (cover)
-    const ir = resultImg.width / resultImg.height;
-    const br = rw / rh;
-    let dw, dh, dx, dy;
-    if(ir > br){ dh = rh; dw = rh * ir; dx = minX + (rw - dw)/2; dy = minY; }
-    else      { dw = rw; dh = rw / ir; dx = minX; dy = minY + (rh - dh)/2; }
-    octx.drawImage(resultImg, dx, dy, dw, dh);
-    // overlay user image (with red transparent already) on top
-    octx.drawImage(photoCanvas, 0, 0);
-    pctx.clearRect(0,0,photoCanvas.width, photoCanvas.height);
-    pctx.drawImage(off, 0, 0);
-    $('savePhotoBtn').disabled = false;
-  }else{
-    $('savePhotoBtn').disabled = redCount > 50 ? false : true;
-  }
-}
+  $('savePhotoBtn').addEventListener('click', ()=>{
+    try{
+      const dataUrl = photoCanvas.toDataURL('image/png');
+      const a = document.createElement('a');
+      a.href = dataUrl;
+      a.download = `chahan_${Date.now()}.png`;
+      a.click();
+    }catch(e){ alert('保存に失敗しました：' + e.message); }
+  });
+  $('photoHomeBtn').addEventListener('click', leaveChahan);
 
-$('savePhotoBtn').addEventListener('click', ()=>{
-  try{
-    const dataUrl = photoCanvas.toDataURL('image/png');
-    const a = document.createElement('a');
-    a.href = dataUrl;
-    a.download = `chahan_${Date.now()}.png`;
-    a.click();
-  }catch(e){ alert('保存に失敗しました：' + e.message); }
-});
-$('photoHomeBtn').addEventListener('click', leaveChahan);
+  window.addEventListener('beforeunload', ()=>{
+    if(currentGameId && mySlot >= 0 && fb){
+      try{ leaveGame(currentGameId, myId); }catch(e){}
+    }
+  });
 
-// utility: escape HTML
-function escapeHtml(s){
-  return String(s||'').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
-}
-
-// cleanup on unload
-window.addEventListener('beforeunload', ()=>{
-  if(currentGameId && mySlot >= 0){
-    try{ leaveGame(currentGameId, myId); }catch(e){}
-  }
-});
+  console.log('[event] script ready, awaiting load event');
+})();
 </script>
 </body>
 </html>
