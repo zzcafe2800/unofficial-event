@@ -22,7 +22,27 @@
       }).catch(function(){});
     }
   }catch(e){}
-  console.log('%c[event] v.0.4 loaded', 'color:#d9b88a;font-weight:bold');
+  console.log('%c[event] v.0.5 loaded', 'color:#d9b88a;font-weight:bold');
+
+  // ============ visible diagnostics ============
+  // If anything below this throws, we want the user to SEE it on screen.
+  window.__bootStep = 'init';
+  window.addEventListener('error', function(ev){
+    try{
+      var msg = (ev && ev.error && ev.error.stack) ? ev.error.stack : (ev.message || 'unknown error');
+      var box = document.getElementById('__errBox');
+      if(!box){
+        box = document.createElement('div');
+        box.id = '__errBox';
+        box.style.cssText = 'position:fixed;top:0;left:0;right:0;background:#600;color:#fff;font:11px/1.5 monospace;padding:10px 14px;z-index:99999;white-space:pre-wrap;box-shadow:0 4px 16px rgba(0,0,0,.6);max-height:60vh;overflow:auto';
+        (document.body || document.documentElement).appendChild(box);
+      }
+      box.textContent = '[JS ERROR @ step=' + window.__bootStep + ']\n' + msg;
+    }catch(e){}
+  });
+  window.addEventListener('unhandledrejection', function(ev){
+    console.error('[event] unhandled promise rejection:', ev.reason);
+  });
 })();
 </script>
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
@@ -89,9 +109,12 @@
 
   /* ---------- title screen ---------- */
   .stage{position:fixed;inset:0;z-index:10;display:flex;align-items:center;justify-content:center;flex-direction:column;transition:opacity 1.8s ease;pointer-events:none}
-  .title-wrap{text-align:center;color:var(--ink);opacity:0;transform:translateY(8px);transition:opacity 2.4s cubic-bezier(.2,.6,.2,1), transform 2.4s cubic-bezier(.2,.6,.2,1)}
-  .title-wrap.in{opacity:1;transform:translateY(0)}
-  .title-wrap.out{opacity:0;transform:translateY(-6px);transition:opacity 1.6s ease, transform 1.6s ease}
+  .title-wrap{
+    text-align:center;color:var(--ink);
+    opacity:1;transform:translateY(0);
+    transition:opacity 1.8s ease, transform 1.8s ease;
+  }
+  .title-wrap.out{opacity:0;transform:translateY(-6px)}
 
   .t-overline{font-family:var(--serif);font-weight:300;font-size:clamp(11px,1.3vw,13px);letter-spacing:.18em;color:var(--ink-soft);margin-bottom:24px;opacity:0;animation:fadeUp 2.6s .3s ease forwards}
   .t-row1{font-weight:300;font-size:clamp(15px,2vw,19px);letter-spacing:.35em;color:var(--ink-soft);margin-bottom:22px;display:inline-flex;align-items:center;justify-content:center;gap:14px;opacity:0;animation:fadeUp 2.6s .8s ease forwards}
@@ -380,8 +403,8 @@
 </head>
 <body>
 
-  <!-- visible version tag — if you don't see "v.0.4" in the corner, the browser is serving a cached old file -->
-  <div style="position:fixed;top:6px;right:8px;z-index:9999;font-family:'Cormorant Garamond',serif;font-weight:300;font-size:10px;line-height:1;color:rgba(255,255,255,0.5);letter-spacing:.25em;pointer-events:none;text-shadow:0 0 6px rgba(0,0,0,.8)">v.0.4</div>
+  <!-- visible version tag — if you don't see "v.0.5" in the corner, the browser is serving a cached old file -->
+  <div style="position:fixed;top:6px;right:8px;z-index:9999;font-family:'Cormorant Garamond',serif;font-weight:300;font-size:10px;line-height:1;color:rgba(255,255,255,0.5);letter-spacing:.25em;pointer-events:none;text-shadow:0 0 6px rgba(0,0,0,.8)">v.0.5</div>
 
   <!-- backgrounds -->
   <div class="bg-fallback" id="bgFallback"></div>
@@ -612,6 +635,8 @@
 <script>
 "use strict";
 (function(){
+  window.__bootStep = 'iife-start';
+  try {
   // ---------- helpers ----------
   const $ = (id)=>document.getElementById(id);
   const sleep = ms => new Promise(r=>setTimeout(r,ms));
@@ -629,6 +654,7 @@
   let topState = 'loading'; // loading | title | starting | home | shiori | game
 
   // ---------- elements ----------
+  window.__bootStep = 'getting-elements';
   const titleWrap = $('titleWrap'), tapHint = $('tapHint');
   const bgFallback = $('bgFallback');
   const bgA = $('bgImageA'), bgB = $('bgImageB');
@@ -638,6 +664,19 @@
   const lbarTop = $('lbarTop'), lbarBot = $('lbarBot');
   const shiori = $('shiori'), shioriClose = $('shioriClose');
   const chahan = $('chahan');
+
+  // null-check critical elements; if any are missing, log them visibly
+  var missingEls = [];
+  ['titleWrap','tapHint','bgFallback','bgImageA','bgImageB','rainAudio','clickAudio','umbrellaBtn','honkeBtn','honkeModal','honkeClose','honkeIframe','lbarTop','lbarBot','shiori','shioriClose','chahan'].forEach(function(id){
+    if(!document.getElementById(id)) missingEls.push(id);
+  });
+  if(missingEls.length){
+    console.error('[event] MISSING ELEMENTS:', missingEls);
+    var box = document.createElement('div');
+    box.style.cssText = 'position:fixed;top:0;left:0;right:0;background:#600;color:#fff;font:11px/1.5 monospace;padding:10px;z-index:99999';
+    box.textContent = 'MISSING ELEMENTS: ' + missingEls.join(', ');
+    (document.body || document.documentElement).appendChild(box);
+  }
 
   window.addEventListener('load', ()=>{
     setTimeout(()=>{
@@ -652,6 +691,7 @@
   }
 
   // ---------- bg image cycling ----------
+  window.__bootStep = 'bg-cycle-setup';
   const bgImages = ['rain.png','rain1.png','rain2.png','rain3.png','rain4.png','rain5.png'];
   let bgIdx = 0;
   let activeIsA = true;
@@ -677,6 +717,7 @@
   });
 
   // ---------- YouTube IFrame audio ----------
+  window.__bootStep = 'youtube-setup';
   let ytPlayer = null, ytReady = false;
   const YT_AUDIO_ID = 'YAXTn0E-Zgo';
   (function loadYT(){
@@ -725,6 +766,7 @@
   }
 
   // ---------- start (first tap anywhere) ----------
+  window.__bootStep = 'start-fn-setup';
   let started = false;
   function start(){
     if(started) return;
@@ -795,6 +837,7 @@
   document.addEventListener('keydown', e=>{ if(e.key === 'Escape' && honkeModal.classList.contains('in')) closeHonke(); });
 
   // ---------- umbrella → しおり ----------
+  window.__bootStep = 'umbrella-shiori-setup';
   umbrellaBtn.addEventListener('click', (e)=>{
     e.stopPropagation();
     console.log('[event] umbrella clicked, topState=', topState);
@@ -891,6 +934,7 @@
   // =================================================================
   // CHAHAN GAME
   // =================================================================
+  window.__bootStep = 'chahan-setup';
   const ROLE_TAGS = ['1P','2P','3P'];
   const TIMER_TOTAL = 100;
   const TIMER_VISIBLE_UNTIL = 50;
@@ -1382,6 +1426,19 @@
   });
 
   console.log('[event] script ready, awaiting load event');
+  window.__bootStep = 'iife-complete';
+  } catch(err){
+    window.__bootStep = 'iife-crashed';
+    console.error('[event] IIFE crashed at step=' + window.__bootStep + ':', err);
+    var box = document.getElementById('__errBox');
+    if(!box){
+      box = document.createElement('div');
+      box.id = '__errBox';
+      box.style.cssText = 'position:fixed;top:0;left:0;right:0;background:#600;color:#fff;font:11px/1.5 monospace;padding:10px 14px;z-index:99999;white-space:pre-wrap;box-shadow:0 4px 16px rgba(0,0,0,.6);max-height:60vh;overflow:auto';
+      (document.body || document.documentElement).appendChild(box);
+    }
+    box.textContent = '[IIFE CRASH @ ' + window.__bootStep + ']\n' + (err && err.stack ? err.stack : String(err));
+  }
 })();
 </script>
 </body>
