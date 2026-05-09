@@ -124,7 +124,7 @@
   .t-sub{margin-top:24px;font-weight:300;font-size:clamp(11px,1.35vw,13px);letter-spacing:.42em;color:var(--ink-soft);display:inline-flex;align-items:center;justify-content:center;gap:14px;opacity:0;animation:fadeUp 2.6s 2.4s ease forwards}
   .t-sub::before, .t-sub::after{content:'';display:inline-block;width:22px;height:1px;background:linear-gradient(to right, transparent, rgba(244,246,251,.5), transparent)}
   .t-date{font-family:var(--latin);font-weight:300;font-size:11px;letter-spacing:.5em;color:var(--ink-faint);margin-top:42px;opacity:0;animation:fadeUp 2.6s 3s ease forwards}
-  .tap-hint{position:fixed;bottom:7vh;left:0;right:0;text-align:center;z-index:11;font-family:var(--latin);font-weight:300;font-size:10px;letter-spacing:.7em;color:var(--ink-faint);text-transform:uppercase;opacity:0;animation:hintPulse 2.8s 3.6s infinite ease-in-out}
+  .tap-hint{position:fixed;bottom:7vh;left:0;right:0;text-align:center;z-index:11;font-family:var(--latin);font-weight:300;font-size:10px;letter-spacing:.7em;color:var(--ink-faint);text-transform:uppercase;opacity:0;animation:hintPulse 2.8s 3.6s infinite ease-in-out;pointer-events:none}
   .tap-hint.out{animation:none;opacity:0;transition:opacity .8s ease}
   @keyframes fadeUp{to{opacity:1;transform:translateY(0)}}
   @keyframes lineGrow{to{width:120px}}
@@ -678,17 +678,15 @@
     (document.body || document.documentElement).appendChild(box);
   }
 
-  window.addEventListener('load', ()=>{
-    setTimeout(()=>{
-      titleWrap.classList.add('in');
+  // title is now visible by CSS default; just enable tap-to-start after a brief beat
+  // (use plain setTimeout so we don't depend on the 'load' event firing — which can
+  // be delayed indefinitely by missing/slow image assets)
+  setTimeout(()=>{
+    if(topState === 'loading'){
       topState = 'title';
-      console.log('[event] title shown, ready for tap');
-    }, 700);
-  });
-  // also handle DOMContentLoaded as a backup in case 'load' is delayed
-  if(document.readyState === 'complete'){
-    setTimeout(()=>{ if(topState === 'loading'){ titleWrap.classList.add('in'); topState='title'; console.log('[event] title shown (immediate)'); } }, 700);
-  }
+      console.log('[event] title ready, awaiting tap');
+    }
+  }, 700);
 
   // ---------- bg image cycling ----------
   window.__bootStep = 'bg-cycle-setup';
@@ -1415,6 +1413,15 @@
       a.href = dataUrl;
       a.download = `chahan_${Date.now()}.png`;
       a.click();
+      // small confirmation feedback then auto-return home
+      const btn = $('savePhotoBtn');
+      const orig = btn.textContent;
+      btn.textContent = '保 存 し ま し た';
+      btn.disabled = true;
+      setTimeout(()=>{
+        btn.textContent = orig;
+        leaveChahan();
+      }, 900);
     }catch(e){ alert('保存に失敗しました：' + e.message); }
   });
   $('photoHomeBtn').addEventListener('click', leaveChahan);
