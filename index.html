@@ -240,164 +240,17 @@
   @media (max-width:1024px){.shiori-cards{flex-wrap:wrap;max-width:760px}.shiori-card{width:calc(50% - 12px);max-width:340px;height:auto;aspect-ratio:340/520}}
   @media (max-width:540px){.shiori-card{width:calc(50% - 8px)}.shiori-cards{gap:14px;padding:90px 16px 16px}}
 
-  /* =========================================================
-     CHAHAN GAME — multi-stage interactive
-     ========================================================= */
-  .game{
-    position:fixed;inset:0;z-index:60;
-    background:#080a10 center/cover no-repeat;
-    color:var(--ink);
-    opacity:0;pointer-events:none;transition:opacity .9s ease, background-image 1.2s ease;
-    font-family:var(--serif);
-  }
-  .game.in{opacity:1;pointer-events:auto}
-  .game::after{content:'';position:absolute;inset:0;background:linear-gradient(180deg, rgba(0,0,0,.45), rgba(0,0,0,.25) 50%, rgba(0,0,0,.6));pointer-events:none}
-  .game > *{position:relative;z-index:1}
-
-  .game-back{position:absolute;top:24px;left:28px;z-index:5;font-family:var(--latin);font-weight:300;font-size:11px;letter-spacing:.35em;color:var(--ink-faint);cursor:pointer;text-transform:uppercase;background:transparent;border:0;padding:8px 12px;transition:color .3s ease}
-  .game-back:hover{color:var(--ink)}
-
-  /* ----- screen: name input ----- */
-  .gscr{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:24px;opacity:0;pointer-events:none;transition:opacity .8s ease}
-  .gscr.in{opacity:1;pointer-events:auto}
-
-  .name-form{display:flex;flex-direction:column;align-items:center;gap:32px}
-  .name-prompt{font-weight:300;font-size:clamp(18px,2.4vw,28px);letter-spacing:.4em;color:var(--ink)}
-  .name-input{
-    width:min(420px, 80vw);background:transparent;border:0;border-bottom:1px solid var(--ink-faint);
-    color:var(--ink);font-family:var(--serif);font-weight:300;font-size:24px;letter-spacing:.2em;
-    text-align:center;padding:14px 8px;outline:none;transition:border-color .3s ease;
-  }
-  .name-input:focus{border-color:var(--ink)}
-  .btn-primary{
-    background:transparent;border:1px solid var(--ink-soft);color:var(--ink);
-    font-family:var(--serif);font-weight:300;font-size:13px;letter-spacing:.45em;
-    padding:14px 36px;cursor:pointer;transition:all .35s ease;
-  }
-  .btn-primary:hover{background:rgba(244,246,251,.08);border-color:var(--ink)}
-  .btn-primary:disabled{opacity:.3;cursor:not-allowed}
-
-  /* ----- screen: how to play ----- */
-  .howto{display:flex;flex-direction:column;align-items:center;gap:28px;width:100%;max-width:1100px;padding:60px 24px}
-  .howto-img{
-    width:min(820px, 92vw);aspect-ratio:16/10;
-    background:#1a1f2a center/contain no-repeat;background-image:url('chahan-howto.png');
-    border:1px solid rgba(244,246,251,.1);box-shadow:0 12px 40px rgba(0,0,0,.6);
-  }
-  .howto-actions{display:flex;justify-content:flex-end;width:min(820px, 92vw)}
-
-  /* ----- screen: lobby ----- */
-  .lobby{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:40px 20px}
-  .lobby-title{font-weight:300;font-size:clamp(24px,3.6vw,42px);letter-spacing:.45em;margin-bottom:14px;text-shadow:0 0 20px rgba(0,0,0,.8)}
-  .lobby-sub{font-weight:300;font-size:clamp(13px,1.6vw,16px);letter-spacing:.35em;color:var(--ink-soft);margin-bottom:60px}
-  .slots{display:flex;gap:48px;align-items:flex-start}
-  .slot{display:flex;flex-direction:column;align-items:center;gap:14px;width:160px}
-  .slot-role{font-weight:300;font-size:13px;letter-spacing:.35em;color:var(--ink-soft);text-align:center;line-height:1.6;min-height:38px}
-  .slot-role .role-tag{display:block;font-family:var(--latin);font-size:9px;letter-spacing:.5em;color:var(--ink-faint);text-transform:uppercase;margin-top:2px}
-  .slot-circle{
-    position:relative;width:130px;height:130px;border-radius:50%;
-    border:1px solid var(--ink-faint);background:rgba(20,24,32,.4);
-    display:flex;align-items:center;justify-content:center;cursor:pointer;
-    transition:all .4s ease;
-  }
-  .slot-circle:hover{border-color:var(--ink-soft);background:rgba(40,48,60,.5)}
-  .slot-circle.filled{border-color:var(--ink-soft);background:rgba(217,184,138,.08);cursor:default}
-  .slot-circle.mine{border-color:var(--warm);background:rgba(217,184,138,.15)}
-  .slot-circle .plus{font-family:var(--latin);font-size:32px;font-weight:300;color:var(--ink-soft);transition:color .3s ease}
-  .slot-circle:hover .plus{color:var(--ink)}
-  .slot-circle .pname{font-weight:300;font-size:14px;letter-spacing:.18em;color:var(--ink);text-align:center;padding:0 8px;word-break:break-word}
-  .slot-leave{position:absolute;top:-6px;right:-6px;width:24px;height:24px;border-radius:50%;border:1px solid var(--ink-faint);background:#0a0e15;color:var(--ink-soft);cursor:pointer;font-size:14px;line-height:1;display:none;align-items:center;justify-content:center}
-  .slot-circle.mine .slot-leave{display:flex}
-  .slot-leave:hover{border-color:var(--ink);color:var(--ink)}
-  .lobby-status{margin-top:60px;font-weight:300;font-size:14px;letter-spacing:.4em;color:var(--ink-soft);min-height:24px}
-  .lobby-status.ready{color:var(--warm);font-size:16px;letter-spacing:.5em;animation:readyPulse 1.4s ease-in-out infinite}
-  @keyframes readyPulse{0%,100%{opacity:.6}50%{opacity:1}}
-
-  /* ----- screen: gameplay ----- */
-  .play{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:24px;text-align:center}
-  .play-header{position:absolute;top:0;left:0;right:0;padding:20px 28px;display:flex;justify-content:center;gap:36px;flex-wrap:wrap}
-  .play-name-tag{display:flex;flex-direction:column;align-items:center;gap:4px;min-width:96px;padding:8px 12px;border-radius:6px;transition:all .35s ease}
-  .play-name-tag.active{background:rgba(217,184,138,.12);box-shadow:0 0 0 1px rgba(217,184,138,.35) inset}
-  .pn-name{font-weight:300;font-size:13px;letter-spacing:.18em;color:var(--ink)}
-  .pn-tag{font-family:var(--latin);font-size:9px;letter-spacing:.4em;color:var(--ink-faint);text-transform:uppercase}
-  .pn-status{font-size:10px;letter-spacing:.3em;color:var(--ink-soft);margin-top:2px}
-  .pn-score{font-family:var(--latin);font-size:13px;letter-spacing:.15em;color:var(--warm);margin-top:2px;min-height:14px}
-
-  .play-current{position:absolute;left:28px;top:50%;transform:translateY(-50%);text-align:left}
-  .pc-label{font-family:var(--latin);font-size:10px;letter-spacing:.4em;color:var(--ink-faint);text-transform:uppercase;margin-bottom:8px}
-  .pc-name{font-weight:300;font-size:22px;letter-spacing:.18em;color:var(--ink);margin-bottom:18px}
-  .pc-total-label{font-family:var(--latin);font-size:9px;letter-spacing:.4em;color:var(--ink-faint);text-transform:uppercase;margin-bottom:4px}
-  .pc-total{font-family:var(--latin);font-size:36px;font-weight:300;color:var(--warm)}
-
-  .play-target{font-weight:300;font-size:clamp(18px,2.4vw,28px);letter-spacing:.4em;color:var(--ink);text-shadow:0 0 18px rgba(0,0,0,.8);margin-bottom:24px}
-  .play-target.warn{color:var(--warm)}
-
-  .timer-wrap{position:relative;width:240px;height:240px;display:flex;align-items:center;justify-content:center;margin-bottom:32px;transition:opacity 1.2s ease}
-  .timer-wrap.hidden{opacity:0}
-  .timer-ring{position:absolute;inset:0;transform:rotate(-90deg)}
-  .timer-ring circle{fill:none;stroke-width:2}
-  .timer-ring .bg{stroke:rgba(244,246,251,.08)}
-  .timer-ring .fg{stroke:#7ec8d8;stroke-linecap:round;transition:stroke-dashoffset .1s linear}
-  .timer-num{font-family:var(--latin);font-weight:300;font-size:64px;color:var(--ink);letter-spacing:.05em}
-
-  .play-action{display:flex;flex-direction:column;gap:14px;align-items:center}
-  .btn-action{
-    background:transparent;border:1px solid var(--ink);color:var(--ink);
-    font-family:var(--serif);font-weight:300;font-size:14px;letter-spacing:.5em;
-    padding:18px 56px;cursor:pointer;transition:all .35s ease;min-width:200px;
-  }
-  .btn-action:hover{background:rgba(244,246,251,.1)}
-  .btn-action.stop{border-color:#e8a8a8;color:#e8a8a8}
-  .btn-action.stop:hover{background:rgba(232,168,168,.12)}
-  .btn-action:disabled{opacity:.3;cursor:not-allowed}
-  .play-watching{font-weight:300;font-size:13px;letter-spacing:.35em;color:var(--ink-soft);margin-top:24px}
-
-  .turn-result{margin-top:18px;font-weight:300;font-size:18px;letter-spacing:.3em;color:var(--ink);min-height:30px}
-  .turn-result .off{font-family:var(--latin);font-size:24px;color:var(--warm)}
-  .turn-result .scr{font-family:var(--latin);font-size:24px;color:var(--warm)}
-
-  /* ----- screen: results ----- */
-  .results{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:30px 20px;gap:20px;overflow:auto}
-  .results-headline{font-weight:300;font-size:clamp(28px,4vw,46px);letter-spacing:.5em;color:var(--ink);text-shadow:0 0 24px rgba(0,0,0,.8);opacity:0;transform:translateY(8px);transition:opacity 1.2s ease, transform 1.2s ease}
-  .results.in .results-headline{opacity:1;transform:translateY(0)}
-  .results-comment{font-weight:300;font-size:clamp(14px,1.8vw,18px);letter-spacing:.32em;color:var(--ink-soft);text-align:center;max-width:680px;opacity:0;transition:opacity 1.2s 1.5s ease}
-  .results.in .results-comment{opacity:1}
-  .results-img-wrap{position:relative;width:min(420px, 78vw);aspect-ratio:1/1.2;background:#1a1f2a center/cover no-repeat;border:1px solid rgba(244,246,251,.08);box-shadow:0 10px 40px rgba(0,0,0,.6);opacity:0;transform:scale(.97);transition:opacity 1.4s 2.2s ease, transform 1.4s 2.2s ease}
-  .results.in .results-img-wrap{opacity:1;transform:scale(1)}
-  .results-scores{display:flex;gap:30px;flex-wrap:wrap;justify-content:center;opacity:0;transition:opacity 1.2s 3s ease}
-  .results.in .results-scores{opacity:1}
-  .rs-block{display:flex;flex-direction:column;align-items:center;gap:4px;min-width:90px}
-  .rs-block .rsl{font-family:var(--latin);font-size:9px;letter-spacing:.4em;color:var(--ink-faint);text-transform:uppercase}
-  .rs-block .rsv{font-family:var(--latin);font-size:24px;font-weight:300;color:var(--warm)}
-  .rs-block .rsn{font-size:11px;letter-spacing:.18em;color:var(--ink-soft)}
-  .rs-block.total .rsv{font-size:38px;color:var(--ink)}
-  .results-actions{display:flex;gap:16px;margin-top:8px;opacity:0;transition:opacity 1.2s 3.6s ease}
-  .results.in .results-actions{opacity:1}
-
-  /* ----- screen: photo composite ----- */
-  .photo-screen{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:30px 20px;gap:20px;overflow:auto}
-  .photo-h{font-weight:300;font-size:clamp(20px,2.6vw,28px);letter-spacing:.45em;margin-bottom:6px}
-  .photo-sub{font-weight:300;font-size:13px;letter-spacing:.3em;color:var(--ink-soft);margin-bottom:14px;text-align:center;max-width:560px;line-height:1.7}
-  .photo-stage{position:relative;width:min(640px, 92vw);aspect-ratio:4/3;background:#0a0d13 center/contain no-repeat;border:1px solid rgba(244,246,251,.1);overflow:hidden}
-  #photoCanvas{position:absolute;inset:0;width:100%;height:100%;display:block}
-  .photo-actions{display:flex;gap:14px;flex-wrap:wrap;justify-content:center}
-  .file-input-label{cursor:pointer}
-  #fileInput{display:none}
+  /* card click → external navigation transitions */
+  .shiori-card.firing{transform:scale(.97) !important;opacity:.45;transition:transform .35s ease, opacity .55s ease}
+  .shiori-card.dim{animation:cardDim .7s ease}
+  @keyframes cardDim{0%,100%{opacity:1}40%{opacity:.35}}
+  body.fade-out{opacity:0;transition:opacity .8s ease}
 
   /* misc */
-  .blur-rest .stage,.blur-rest .umbrella,.blur-rest .honke{filter:blur(2px);transition:filter .8s ease}
 
   @media (max-width:640px){
     .umbrella{right:6vw}
     .umbrella svg{width:78px;height:104px}
-    .slots{gap:18px}
-    .slot{width:auto}
-    .slot-circle{width:96px;height:96px}
-    .play-current{position:static;transform:none;text-align:center;margin-bottom:14px}
-    .play-header{flex-direction:column;gap:8px;padding:14px}
-    .play-header .play-name-tag{flex-direction:row;gap:10px}
-    .timer-wrap{width:180px;height:180px}
-    .timer-num{font-size:46px}
   }
 </style>
 </head>
@@ -491,135 +344,21 @@
       <div class="sh-title">し　お　り</div>
     </div>
     <div class="shiori-cards">
-      <div class="shiori-card" data-card="1" style="background-image:url('card1.png')">
+      <div class="shiori-card" data-card="1" data-href="https://zzcafe2800.github.io/chahan/" style="background-image:url('card1.png')">
         <div class="sc-num">01</div>
         <div class="sc-name">３ 人 で チ ャ ー ハ ン 作 り</div>
       </div>
-      <div class="shiori-card" data-card="2" style="background-image:url('card2.png')">
+      <div class="shiori-card" data-card="2" data-href="" style="background-image:url('card2.png')">
         <div class="sc-num">02</div>
         <div class="sc-name">天 気 探 し</div>
       </div>
-      <div class="shiori-card" data-card="3" style="background-image:url('card3.png')">
+      <div class="shiori-card" data-card="3" data-href="" style="background-image:url('card3.png')">
         <div class="sc-num">03</div>
         <div class="sc-name">参 考 フ ォ ト 集</div>
       </div>
-      <div class="shiori-card" data-card="4" style="background-image:url('card4.png')">
+      <div class="shiori-card" data-card="4" data-href="" style="background-image:url('card4.png')">
         <div class="sc-num">04</div>
         <div class="sc-name">そ の 他</div>
-      </div>
-    </div>
-  </div>
-
-  <!-- ============== チャーハン game ============== -->
-  <div class="game" id="chahan">
-    <button class="game-back" id="chahanBack">← back</button>
-
-    <!-- 1) name input -->
-    <div class="gscr in" id="scrName">
-      <div class="name-form">
-        <div class="name-prompt">あ　な　た　の　名　前　は ？</div>
-        <input type="text" class="name-input" id="nameInput" maxlength="12" autocomplete="off">
-        <button class="btn-primary" id="nameSubmit" disabled>つ ぎ へ</button>
-      </div>
-    </div>
-
-    <!-- 2) how to play -->
-    <div class="gscr" id="scrHowto">
-      <div class="howto">
-        <div class="howto-img" aria-label="遊び方"></div>
-        <div class="howto-actions">
-          <button class="btn-primary" id="playBtn">遊　ぶ</button>
-        </div>
-      </div>
-    </div>
-
-    <!-- 3) lobby (3 slots) -->
-    <div class="gscr" id="scrLobby">
-      <div class="lobby">
-        <div class="lobby-title" id="lobbyTitle">三 人 待 機 中</div>
-        <div class="lobby-sub">三 人 で チ ャ ー ハ ン を 作 ろ う ！</div>
-        <div class="slots" id="slots">
-          <!-- LtoR display: 3P (left, 仕上げる), 2P, 1P (right, 下ごしらえ) -->
-          <div class="slot" data-slot="2">
-            <div class="slot-role">仕上げる担当<span class="role-tag">3P · finishing</span></div>
-            <div class="slot-circle" data-slot="2">
-              <span class="plus">＋</span>
-              <button class="slot-leave" data-slot="2">×</button>
-            </div>
-          </div>
-          <div class="slot" data-slot="1">
-            <div class="slot-role">炒める担当<span class="role-tag">2P · stir-fry</span></div>
-            <div class="slot-circle" data-slot="1">
-              <span class="plus">＋</span>
-              <button class="slot-leave" data-slot="1">×</button>
-            </div>
-          </div>
-          <div class="slot" data-slot="0">
-            <div class="slot-role">下ごしらえ担当<span class="role-tag">1P · prep</span></div>
-            <div class="slot-circle" data-slot="0">
-              <span class="plus">＋</span>
-              <button class="slot-leave" data-slot="0">×</button>
-            </div>
-          </div>
-        </div>
-        <div class="lobby-status" id="lobbyStatus">仲 間 を 待 っ て い ま す</div>
-      </div>
-    </div>
-
-    <!-- 4) play -->
-    <div class="gscr" id="scrPlay">
-      <div class="play">
-        <div class="play-header" id="playHeader"></div>
-        <div class="play-current" id="playCurrent">
-          <div class="pc-label">cooking</div>
-          <div class="pc-name" id="pcName">―</div>
-          <div class="pc-total-label">team total</div>
-          <div class="pc-total" id="pcTotal">0</div>
-        </div>
-        <div class="play-target" id="playTarget">０ 秒 ぴ っ た り で 止 め ろ ！ ！</div>
-        <div class="timer-wrap" id="timerWrap">
-          <svg class="timer-ring" viewBox="0 0 100 100">
-            <circle class="bg" cx="50" cy="50" r="46"/>
-            <circle class="fg" id="timerFg" cx="50" cy="50" r="46" stroke-dasharray="289" stroke-dashoffset="0"/>
-          </svg>
-          <div class="timer-num" id="timerNum">100</div>
-        </div>
-        <div class="play-action" id="playAction">
-          <button class="btn-action" id="actionBtn">S T A R T</button>
-          <div class="play-watching" id="playWatching" style="display:none">― 観 戦 中 ―</div>
-          <div class="turn-result" id="turnResult"></div>
-        </div>
-      </div>
-    </div>
-
-    <!-- 5) results -->
-    <div class="gscr" id="scrResults">
-      <div class="results" id="resultsBox">
-        <div class="results-headline">結 果 発 表</div>
-        <div class="results-comment" id="rComment">―</div>
-        <div class="results-img-wrap" id="rImg"></div>
-        <div class="results-scores" id="rScores"></div>
-        <div class="results-actions">
-          <button class="btn-primary" id="toPhotoBtn">撮　影</button>
-          <button class="btn-primary" id="resultsHomeBtn">ホームへ</button>
-        </div>
-      </div>
-    </div>
-
-    <!-- 6) photo composite -->
-    <div class="gscr" id="scrPhoto">
-      <div class="photo-screen">
-        <div class="photo-h">撮 　 影</div>
-        <div class="photo-sub">赤い丸が入った写真を読み込んでください。<br>赤の部分を切り抜いて、結果画像を合成します。</div>
-        <div class="photo-stage">
-          <canvas id="photoCanvas"></canvas>
-        </div>
-        <div class="photo-actions">
-          <label class="btn-primary file-input-label" for="fileInput">画 像 を 読 み 込 む</label>
-          <input type="file" id="fileInput" accept="image/*">
-          <button class="btn-primary" id="savePhotoBtn" disabled>保 存</button>
-          <button class="btn-primary" id="photoHomeBtn">ホームへ</button>
-        </div>
       </div>
     </div>
   </div>
@@ -651,7 +390,7 @@
   console.log('[event] booted, myId =', myId);
 
   // ---------- top-level state ----------
-  let topState = 'loading'; // loading | title | starting | home | shiori | game
+  let topState = 'loading'; // loading | title | starting | home | shiori
 
   // ---------- elements ----------
   window.__bootStep = 'getting-elements';
@@ -663,11 +402,10 @@
   const honkeBtn = $('honkeBtn'), honkeModal = $('honkeModal'), honkeClose = $('honkeClose'), honkeIframe = $('honkeIframe');
   const lbarTop = $('lbarTop'), lbarBot = $('lbarBot');
   const shiori = $('shiori'), shioriClose = $('shioriClose');
-  const chahan = $('chahan');
 
   // null-check critical elements; if any are missing, log them visibly
   var missingEls = [];
-  ['titleWrap','tapHint','bgFallback','bgImageA','bgImageB','rainAudio','clickAudio','umbrellaBtn','honkeBtn','honkeModal','honkeClose','honkeIframe','lbarTop','lbarBot','shiori','shioriClose','chahan'].forEach(function(id){
+  ['titleWrap','tapHint','bgFallback','bgImageA','bgImageB','rainAudio','clickAudio','umbrellaBtn','honkeBtn','honkeModal','honkeClose','honkeIframe','lbarTop','lbarBot','shiori','shioriClose'].forEach(function(id){
     if(!document.getElementById(id)) missingEls.push(id);
   });
   if(missingEls.length){
@@ -852,8 +590,25 @@
   }
   document.querySelectorAll('.shiori-card').forEach(card=>{
     card.addEventListener('click', ()=>{
-      const which = card.dataset.card;
-      if(which === '1') openChahan();
+      const url = card.dataset.href;
+      if(!url){
+        // soft "not yet" feedback for cards still being built
+        card.classList.add('dim');
+        setTimeout(()=>card.classList.remove('dim'), 700);
+        return;
+      }
+      // brief click animation, then fade page out, then navigate
+      card.classList.add('firing');
+      try{
+        clickAudio.currentTime = 0;
+        clickAudio.volume = 0.85;
+        const p = clickAudio.play(); if(p && p.catch) p.catch(()=>{});
+      }catch(e){}
+      // fully stop ambient before leaving so it doesn't keep playing on the new page's history entry
+      try{ rainAudio.pause(); }catch(e){}
+      if(ytPlayer && ytReady){ try{ ytPlayer.pauseVideo(); }catch(e){} }
+      setTimeout(()=>{ document.body.classList.add('fade-out'); }, 250);
+      setTimeout(()=>{ window.location.href = url; }, 1050);
     });
   });
 
@@ -894,543 +649,6 @@
   requestAnimationFrame(tick);
   bgA.addEventListener('error',()=>{ bgA.style.display='none'; });
 
-  // =================================================================
-  // Firebase (loaded only when chahan game opens, via dynamic import)
-  // =================================================================
-  const firebaseConfig = {
-    apiKey: "AIzaSyAvLqQhgJlZLpyhfAYEdp38inFuIoUrmjg",
-    authDomain: "offev-3c70f.firebaseapp.com",
-    projectId: "offev-3c70f",
-    storageBucket: "offev-3c70f.firebasestorage.app",
-    messagingSenderId: "834131885181",
-    appId: "1:834131885181:web:a32518353d0e9627680514",
-    measurementId: "G-KB95QE8Y1V"
-  };
-  let fb = null; // populated by ensureFirebase()
-  let firebaseLoadAttempted = false;
-  async function ensureFirebase(){
-    if(fb) return fb;
-    if(firebaseLoadAttempted) return null;
-    firebaseLoadAttempted = true;
-    console.log('[fb] loading firebase modules...');
-    try{
-      const [appMod, fsMod] = await Promise.all([
-        import('https://www.gstatic.com/firebasejs/12.13.0/firebase-app.js'),
-        import('https://www.gstatic.com/firebasejs/12.13.0/firebase-firestore.js')
-      ]);
-      const app = appMod.initializeApp(firebaseConfig);
-      const db = fsMod.getFirestore(app);
-      fb = Object.assign({ app, db }, fsMod);
-      console.log('[fb] ready');
-      return fb;
-    }catch(e){
-      console.error('[fb] failed to load:', e);
-      return null;
-    }
-  }
-
-  // =================================================================
-  // CHAHAN GAME
-  // =================================================================
-  window.__bootStep = 'chahan-setup';
-  const ROLE_TAGS = ['1P','2P','3P'];
-  const TIMER_TOTAL = 100;
-  const TIMER_VISIBLE_UNTIL = 50;
-
-  let myName = '';
-  let chahanSubState = 'name';
-  let currentGameId = null;
-  let currentGameSnap = null;
-  let mySlot = -1;
-  let unsubGame = null;
-  let timerHandle = null;
-  let timerStopped = false;
-
-  function showChahanScreen(id){
-    document.querySelectorAll('#chahan .gscr').forEach(s=>s.classList.remove('in'));
-    $(id).classList.add('in');
-  }
-
-  function openChahan(){
-    topState = 'game';
-    shiori.classList.remove('in');
-    chahan.classList.add('in');
-    chahanSubState = myName ? 'howto' : 'name';
-    showChahanScreen(chahanSubState === 'name' ? 'scrName' : 'scrHowto');
-  }
-
-  $('chahanBack').addEventListener('click', leaveChahan);
-  async function leaveChahan(){
-    if(unsubGame){ try{ unsubGame(); }catch(e){} unsubGame = null; }
-    if(currentGameId && mySlot >= 0 && fb){
-      try{ await leaveGame(currentGameId, myId); }catch(e){}
-    }
-    currentGameId = null; mySlot = -1; currentGameSnap = null;
-    if(timerHandle){ clearInterval(timerHandle); timerHandle = null; }
-    chahan.classList.remove('in');
-    chahan.style.backgroundImage = '';
-    topState = 'home';
-    resumeAmbient();
-  }
-
-  // ----- name -----
-  const nameInput = $('nameInput'), nameSubmit = $('nameSubmit');
-  nameInput.addEventListener('input', ()=>{ nameSubmit.disabled = nameInput.value.trim().length === 0; });
-  nameInput.addEventListener('keydown', e=>{ if(e.key === 'Enter' && !nameSubmit.disabled) nameSubmit.click(); });
-  nameSubmit.addEventListener('click', ()=>{
-    myName = nameInput.value.trim().slice(0,12);
-    if(!myName) return;
-    chahanSubState = 'howto';
-    showChahanScreen('scrHowto');
-  });
-
-  // ----- howto -----
-  $('playBtn').addEventListener('click', ()=>{
-    chahanSubState = 'lobby';
-    showChahanScreen('scrLobby');
-    joinOrCreateGame();
-  });
-
-  // ----- lobby -----
-  async function joinOrCreateGame(){
-    $('lobbyStatus').textContent = '通信を準備しています…';
-    $('lobbyStatus').classList.remove('ready');
-    const f = await ensureFirebase();
-    if(!f){
-      $('lobbyStatus').textContent = 'Firebase が読み込めません（オフライン or CDNブロック）';
-      return;
-    }
-    $('lobbyStatus').textContent = '仲 間 を 待 っ て い ま す';
-    try{
-      const q = f.query(f.collection(f.db, 'games'),
-        f.where('status','==','waiting'),
-        f.orderBy('createdAt','asc'),
-        f.limit(5));
-      const snap = await f.getDocs(q);
-      let joined = false;
-      for(const d of snap.docs){
-        const data = d.data();
-        if((data.players || []).length < 3){
-          const ok = await tryJoin(d.id);
-          if(ok){ currentGameId = d.id; joined = true; break; }
-        }
-      }
-      if(!joined){
-        const ref = await f.addDoc(f.collection(f.db,'games'), {
-          status:'waiting',
-          players:[{ id: myId, name: myName, slot: 0 }],
-          currentTurn: 0,
-          turnState: 'idle',
-          turnScores: [null,null,null],
-          createdAt: f.serverTimestamp()
-        });
-        currentGameId = ref.id;
-        mySlot = 0;
-      }
-      listenGame(currentGameId);
-    }catch(err){
-      console.error('[fb]', err);
-      $('lobbyStatus').textContent = '通信エラー — Firestoreのルールを確認してください';
-    }
-  }
-
-  async function tryJoin(gameId){
-    const f = fb; if(!f) return false;
-    try{
-      return await f.runTransaction(f.db, async (tx)=>{
-        const ref = f.doc(f.db,'games',gameId);
-        const cur = await tx.get(ref);
-        if(!cur.exists()) return false;
-        const data = cur.data();
-        if(data.status !== 'waiting') return false;
-        const players = data.players || [];
-        if(players.length >= 3) return false;
-        if(players.find(p=>p.id === myId)){ mySlot = players.find(p=>p.id===myId).slot; return true; }
-        const slot = players.length;
-        players.push({ id: myId, name: myName, slot });
-        mySlot = slot;
-        const update = { players };
-        if(players.length === 3){ update.status = 'playing'; update.currentTurn = 0; update.turnState='idle'; }
-        tx.update(ref, update);
-        return true;
-      });
-    }catch(e){ console.error(e); return false; }
-  }
-
-  async function leaveGame(gameId, playerId){
-    const f = fb; if(!f) return;
-    try{
-      const ref = f.doc(f.db,'games',gameId);
-      await f.runTransaction(f.db, async tx=>{
-        const cur = await tx.get(ref);
-        if(!cur.exists()) return;
-        const data = cur.data();
-        const players = (data.players || []).filter(p => p.id !== playerId);
-        if(data.status === 'waiting'){
-          if(players.length === 0){ tx.delete(ref); }
-          else{
-            players.forEach((p,i)=>{ p.slot = i; });
-            tx.update(ref, { players });
-          }
-        }else{
-          tx.update(ref, { players });
-        }
-      });
-    }catch(e){ console.error(e); }
-  }
-
-  function listenGame(gameId){
-    if(!fb) return;
-    if(unsubGame){ try{ unsubGame(); }catch(e){} }
-    const ref = fb.doc(fb.db,'games',gameId);
-    unsubGame = fb.onSnapshot(ref, (snap)=>{
-      if(!snap.exists()){
-        $('lobbyStatus').textContent = '部 屋 が 閉 じ ら れ ま し た';
-        return;
-      }
-      const data = snap.data();
-      currentGameSnap = data;
-      const me = (data.players || []).find(p => p.id === myId);
-      mySlot = me ? me.slot : -1;
-      if(chahanSubState === 'lobby'){
-        renderLobby(data);
-        if(data.status === 'playing'){ enterPlay(data); }
-      }else if(chahanSubState === 'play'){
-        renderPlay(data);
-      }
-    }, err => {
-      console.error('[fb] onSnapshot:', err);
-      $('lobbyStatus').textContent = '通 信 エ ラ ー';
-    });
-  }
-
-  function renderLobby(data){
-    const players = data.players || [];
-    document.querySelectorAll('.slot-circle').forEach(circle=>{
-      const s = parseInt(circle.dataset.slot, 10);
-      const p = players.find(p=>p.slot === s);
-      circle.classList.toggle('filled', !!p);
-      circle.classList.toggle('mine', p && p.id === myId);
-      const plus = circle.querySelector('.plus');
-      let pname = circle.querySelector('.pname');
-      if(p){
-        if(plus) plus.style.display = 'none';
-        if(!pname){
-          pname = document.createElement('span'); pname.className = 'pname';
-          circle.appendChild(pname);
-        }
-        pname.textContent = p.name;
-      }else{
-        if(plus) plus.style.display = '';
-        if(pname) pname.remove();
-      }
-    });
-    if(players.length === 3){
-      $('lobbyStatus').textContent = '準 備 完 了';
-      $('lobbyStatus').classList.add('ready');
-    }else{
-      $('lobbyStatus').textContent = `あと ${3 - players.length} 人 待 機 中`;
-      $('lobbyStatus').classList.remove('ready');
-    }
-  }
-
-  document.querySelectorAll('.slot-circle').forEach(circle=>{
-    circle.addEventListener('click', async ()=>{
-      if(!currentGameId || !fb) return;
-      if(circle.classList.contains('filled')) return;
-      const targetSlot = parseInt(circle.dataset.slot, 10);
-      try{
-        const ref = fb.doc(fb.db,'games',currentGameId);
-        await fb.runTransaction(fb.db, async tx=>{
-          const cur = await tx.get(ref); if(!cur.exists()) return;
-          const data = cur.data();
-          if(data.status !== 'waiting') return;
-          let players = data.players || [];
-          const me = players.find(p=>p.id===myId);
-          if(players.find(p=>p.slot===targetSlot)) return;
-          if(me){ me.slot = targetSlot; }
-          else{ players.push({ id: myId, name: myName, slot: targetSlot }); }
-          const update = { players };
-          if(players.length === 3){ update.status='playing'; update.currentTurn=0; update.turnState='idle'; }
-          tx.update(ref, update);
-        });
-      }catch(e){ console.error(e); }
-    });
-  });
-  document.querySelectorAll('.slot-leave').forEach(btn=>{
-    btn.addEventListener('click', async (e)=>{
-      e.stopPropagation();
-      if(!currentGameId || !fb) return;
-      await leaveGame(currentGameId, myId);
-      mySlot = -1;
-      chahanSubState = 'lobby';
-      joinOrCreateGame();
-    });
-  });
-
-  // ----- play -----
-  async function enterPlay(data){
-    chahanSubState = 'play';
-    showChahanScreen('scrPlay');
-    renderPlay(data);
-  }
-  function bgForTurn(turn){ return ['1p.png','2p.png','3p.png'][turn] || 'rain.png'; }
-
-  function renderPlay(data){
-    if(!data) return;
-    const players = (data.players || []).slice().sort((a,b)=>a.slot - b.slot);
-    const hdr = $('playHeader'); hdr.innerHTML = '';
-    players.forEach(p=>{
-      const isCurrent = (p.slot === data.currentTurn);
-      const isMe = p.id === myId;
-      const ts = data.turnScores || [null,null,null];
-      const status = (ts[p.slot] != null) ? '完 了' : (isCurrent ? '料 理 中' : '観 戦 中');
-      const div = document.createElement('div');
-      div.className = 'play-name-tag' + (isCurrent ? ' active' : '');
-      div.innerHTML = `<div class="pn-tag">(${ROLE_TAGS[p.slot]})</div><div class="pn-name">${escapeHtml(p.name)}${isMe?' ·':''}</div><div class="pn-status">${status}</div><div class="pn-score">${ts[p.slot]!=null ? ts[p.slot] : ''}</div>`;
-      hdr.appendChild(div);
-    });
-
-    const cur = players.find(p=>p.slot === data.currentTurn);
-    $('pcName').textContent = cur ? cur.name : '―';
-    const total = (data.turnScores || []).reduce((s,v)=>s + (v||0), 0);
-    $('pcTotal').textContent = total;
-
-    chahan.style.backgroundImage = `url('${bgForTurn(data.currentTurn)}')`;
-    chahan.style.backgroundSize = 'cover';
-    chahan.style.backgroundPosition = 'center';
-    chahan.style.backgroundRepeat = 'no-repeat';
-
-    const isMyTurn = (mySlot === data.currentTurn);
-    const turnDone = (data.turnScores || [])[data.currentTurn] != null;
-    const playWatching = $('playWatching');
-    const actionBtn = $('actionBtn');
-    if(isMyTurn && !turnDone && data.turnState !== 'running'){
-      actionBtn.style.display = '';
-      actionBtn.disabled = false;
-      actionBtn.classList.remove('stop');
-      actionBtn.textContent = 'S T A R T';
-      playWatching.style.display = 'none';
-      $('timerWrap').classList.remove('hidden');
-    }else if(isMyTurn && data.turnState === 'running'){
-      actionBtn.style.display = '';
-      actionBtn.disabled = false;
-      actionBtn.classList.add('stop');
-      actionBtn.textContent = 'S T O P';
-      playWatching.style.display = 'none';
-    }else{
-      actionBtn.style.display = 'none';
-      playWatching.style.display = '';
-    }
-
-    if(data.turnState === 'running' && data.timerStart){
-      if(!timerHandle){
-        const startMs = data.timerStart.toMillis ? data.timerStart.toMillis() : Date.now();
-        runTimer(startMs);
-      }
-    }else if(data.turnState !== 'running' && timerHandle){
-      clearInterval(timerHandle); timerHandle = null;
-    }
-
-    const lastDoneSlot = (data.turnScores || []).map((v,i)=>v!=null?i:-1).filter(i=>i>=0).pop();
-    if(lastDoneSlot != null && lastDoneSlot >= 0 && data.turnState === 'idle'){
-      const off = data.turnOffsets ? data.turnOffsets[lastDoneSlot] : null;
-      const sc = data.turnScores[lastDoneSlot];
-      $('turnResult').innerHTML = `<span>${escapeHtml(players.find(p=>p.slot===lastDoneSlot)?.name || '')} ：</span><span class="off">${off!=null ? (off>0?'+':'') + off.toFixed(1)+'秒' : ''}</span><span> → </span><span class="scr">${sc}点</span>`;
-    }
-
-    if(data.status === 'finished' || (data.turnScores || []).every(v=>v != null)){
-      setTimeout(()=>showResults(data), 1800);
-    }
-  }
-
-  function runTimer(startMs){
-    const FG = $('timerFg');
-    const NUM = $('timerNum');
-    const wrap = $('timerWrap');
-    const C = 2 * Math.PI * 46;
-    FG.setAttribute('stroke-dasharray', C.toFixed(2));
-    timerStopped = false;
-    timerHandle = setInterval(()=>{
-      const elapsed = (Date.now() - startMs) / 1000;
-      const remaining = TIMER_TOTAL - elapsed;
-      if(remaining > TIMER_VISIBLE_UNTIL){
-        wrap.classList.remove('hidden');
-        NUM.textContent = Math.max(0, Math.ceil(remaining));
-        const ratio = Math.max(0, remaining / TIMER_TOTAL);
-        FG.setAttribute('stroke-dashoffset', (C * (1 - ratio)).toFixed(2));
-      }else{
-        wrap.classList.add('hidden');
-      }
-    }, 80);
-  }
-
-  $('actionBtn').addEventListener('click', async ()=>{
-    if(!currentGameSnap || !currentGameId || !fb) return;
-    if(mySlot !== currentGameSnap.currentTurn) return;
-    if(currentGameSnap.turnState === 'idle'){
-      try{
-        await fb.updateDoc(fb.doc(fb.db,'games',currentGameId), {
-          turnState: 'running',
-          timerStart: fb.serverTimestamp()
-        });
-      }catch(e){ console.error(e); }
-    }else if(currentGameSnap.turnState === 'running'){
-      if(timerStopped) return;
-      timerStopped = true;
-      const startMs = currentGameSnap.timerStart && currentGameSnap.timerStart.toMillis ? currentGameSnap.timerStart.toMillis() : Date.now();
-      const elapsed = (Date.now() - startMs) / 1000;
-      const off = TIMER_TOTAL - elapsed;
-      const score = Math.max(0, Math.round(100 - Math.abs(off) * 10));
-      try{
-        const ref = fb.doc(fb.db,'games',currentGameId);
-        await fb.runTransaction(fb.db, async tx=>{
-          const cur = await tx.get(ref); if(!cur.exists()) return;
-          const d = cur.data();
-          const ts = (d.turnScores || [null,null,null]).slice();
-          const tos = (d.turnOffsets || [null,null,null]).slice();
-          ts[d.currentTurn] = score;
-          tos[d.currentTurn] = Number(off.toFixed(1));
-          const next = d.currentTurn + 1;
-          const update = { turnScores: ts, turnOffsets: tos, turnState: 'idle' };
-          if(next >= 3){ update.status = 'finished'; }
-          else { update.currentTurn = next; }
-          tx.update(ref, update);
-        });
-      }catch(e){ console.error(e); }
-    }
-  });
-
-  function classifyScore(total){
-    if(total >= 270) return { img:'scr1.png', comment:'完 璧 な 三 人 の 連 携 — 中 華 神 の 域' };
-    if(total >= 220) return { img:'scr2.png', comment:'息 ぴ っ た り の 上 級 コ ン ビ' };
-    if(total >= 160) return { img:'scr3.png', comment:'ま あ ま あ の 仕 上 が り' };
-    if(total >= 100) return { img:'scr4.png', comment:'う ー ん … 練 習 が 必 要 で す' };
-    return { img:'scr5.png', comment:'お し い ！ 次 こ そ' };
-  }
-  let resultsImageUrl = '';
-  function showResults(data){
-    if(chahanSubState === 'results') return;
-    chahanSubState = 'results';
-    showChahanScreen('scrResults');
-    $('resultsBox').classList.add('in');
-    const players = (data.players || []).slice().sort((a,b)=>a.slot-b.slot);
-    const ts = data.turnScores || [];
-    const total = ts.reduce((s,v)=>s+(v||0),0);
-    const { img, comment } = classifyScore(total);
-    resultsImageUrl = img;
-    $('rImg').style.backgroundImage = `url('${img}')`;
-    $('rComment').textContent = comment;
-    const sc = $('rScores'); sc.innerHTML = '';
-    players.forEach(p=>{
-      const v = ts[p.slot];
-      sc.innerHTML += `<div class="rs-block"><div class="rsl">${ROLE_TAGS[p.slot]}</div><div class="rsv">${v!=null ? v : '-'}</div><div class="rsn">${escapeHtml(p.name)}</div></div>`;
-    });
-    sc.innerHTML += `<div class="rs-block total"><div class="rsl">total</div><div class="rsv">${total}</div></div>`;
-  }
-
-  $('toPhotoBtn').addEventListener('click', ()=>openPhoto());
-  $('resultsHomeBtn').addEventListener('click', leaveChahan);
-
-  // ----- photo composite -----
-  const photoCanvas = $('photoCanvas');
-  const pctx = photoCanvas.getContext('2d');
-  let userImg = null;
-  let resultImg = null;
-  function openPhoto(){
-    chahanSubState = 'photo';
-    showChahanScreen('scrPhoto');
-    resultImg = new Image();
-    resultImg.crossOrigin = 'anonymous';
-    resultImg.onload = ()=>{ if(userImg) renderPhoto(); };
-    resultImg.src = resultsImageUrl;
-    $('savePhotoBtn').disabled = true;
-  }
-  $('fileInput').addEventListener('change', e=>{
-    const f = e.target.files && e.target.files[0]; if(!f) return;
-    const url = URL.createObjectURL(f);
-    userImg = new Image();
-    userImg.onload = ()=>{ renderPhoto(); URL.revokeObjectURL(url); };
-    userImg.src = url;
-  });
-
-  function renderPhoto(){
-    if(!userImg) return;
-    const stage = photoCanvas.parentElement;
-    const stageW = stage.clientWidth, stageH = stage.clientHeight;
-    const ar = userImg.width / userImg.height;
-    let cw = stageW, ch = stageH;
-    if(stageW / stageH > ar){ cw = stageH * ar; ch = stageH; } else { cw = stageW; ch = stageW / ar; }
-    photoCanvas.width = userImg.width;
-    photoCanvas.height = userImg.height;
-    photoCanvas.style.width = cw+'px';
-    photoCanvas.style.height = ch+'px';
-    pctx.clearRect(0,0,photoCanvas.width, photoCanvas.height);
-    pctx.drawImage(userImg, 0, 0);
-
-    const idata = pctx.getImageData(0,0,photoCanvas.width, photoCanvas.height);
-    const px = idata.data;
-    let minX=photoCanvas.width, minY=photoCanvas.height, maxX=0, maxY=0;
-    let redCount = 0;
-    for(let y=0;y<photoCanvas.height;y++){
-      for(let x=0;x<photoCanvas.width;x++){
-        const i = (y * photoCanvas.width + x) * 4;
-        const r=px[i], g=px[i+1], b=px[i+2];
-        if(r > 140 && g < 110 && b < 110 && (r - Math.max(g,b)) > 40){
-          px[i+3] = 0;
-          if(x<minX) minX=x; if(y<minY) minY=y;
-          if(x>maxX) maxX=x; if(y>maxY) maxY=y;
-          redCount++;
-        }
-      }
-    }
-    pctx.putImageData(idata, 0, 0);
-
-    if(redCount > 50 && resultImg && resultImg.complete && resultImg.naturalWidth){
-      const rw = maxX - minX, rh = maxY - minY;
-      const off = document.createElement('canvas');
-      off.width = photoCanvas.width; off.height = photoCanvas.height;
-      const octx = off.getContext('2d');
-      const ir = resultImg.width / resultImg.height;
-      const br = rw / rh;
-      let dw, dh, dx, dy;
-      if(ir > br){ dh = rh; dw = rh * ir; dx = minX + (rw - dw)/2; dy = minY; }
-      else      { dw = rw; dh = rw / ir; dx = minX; dy = minY + (rh - dh)/2; }
-      octx.drawImage(resultImg, dx, dy, dw, dh);
-      octx.drawImage(photoCanvas, 0, 0);
-      pctx.clearRect(0,0,photoCanvas.width, photoCanvas.height);
-      pctx.drawImage(off, 0, 0);
-      $('savePhotoBtn').disabled = false;
-    }else{
-      $('savePhotoBtn').disabled = redCount > 50 ? false : true;
-    }
-  }
-
-  $('savePhotoBtn').addEventListener('click', ()=>{
-    try{
-      const dataUrl = photoCanvas.toDataURL('image/png');
-      const a = document.createElement('a');
-      a.href = dataUrl;
-      a.download = `chahan_${Date.now()}.png`;
-      a.click();
-      // small confirmation feedback then auto-return home
-      const btn = $('savePhotoBtn');
-      const orig = btn.textContent;
-      btn.textContent = '保 存 し ま し た';
-      btn.disabled = true;
-      setTimeout(()=>{
-        btn.textContent = orig;
-        leaveChahan();
-      }, 900);
-    }catch(e){ alert('保存に失敗しました：' + e.message); }
-  });
-  $('photoHomeBtn').addEventListener('click', leaveChahan);
-
-  window.addEventListener('beforeunload', ()=>{
-    if(currentGameId && mySlot >= 0 && fb){
-      try{ leaveGame(currentGameId, myId); }catch(e){}
-    }
-  });
 
   console.log('[event] script ready, awaiting load event');
   window.__bootStep = 'iife-complete';
