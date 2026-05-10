@@ -199,15 +199,10 @@
     overflow:hidden;
   }
   .shiori.in{opacity:1;pointer-events:auto}
-  .shiori-close{
-    position:absolute;top:24px;right:28px;z-index:60;
-    width:36px;height:36px;border-radius:50%;
-    border:1px solid var(--ink-faint);background:rgba(0,0,0,.4);color:var(--ink-soft);
-    cursor:pointer;font-size:18px;
-    display:flex;align-items:center;justify-content:center;transition:all .3s ease;
-    backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px);
-  }
-  .shiori-close:hover{border-color:var(--ink);color:var(--ink);background:rgba(244,246,251,.1)}
+  /* CRITICAL fix: when shiori is closed, ALL inner stages must stop catching clicks
+     (otherwise sub-stages with .show kept pointer-events:auto and blocked taps on the home page) */
+  .shiori:not(.in){pointer-events:none}
+  .shiori:not(.in) *{pointer-events:none}
 
   /* generic stage that fades in/out within the shiori */
   .shi-stage{
@@ -256,48 +251,80 @@
   @keyframes playBtnIn{to{opacity:1;transform:translateY(0)}}
   .shi-play-btn:hover{background:rgba(255,255,255,.12);transform:translateY(-2px)}
 
-  /* ===== STAGE 2: cards ===== */
-  .shi-cards-stage{}
+  /* ===== STAGE 2: cards (light-blue background, card1-4.png images on cards) ===== */
   .shi-cards-bg{
     position:absolute;inset:0;
-    background:#000 center/cover no-repeat;
-    background-image:url('card5.png');
+    background:linear-gradient(180deg, #b8d8e8 0%, #8fc0d8 50%, #6499b5 100%);
   }
   .shi-cards-bg::after{
     content:'';position:absolute;inset:0;
-    background:linear-gradient(180deg, rgba(0,0,0,.55), rgba(0,0,0,.35) 40%, rgba(0,0,0,.7));
+    background:linear-gradient(180deg, rgba(255,255,255,.08) 0%, transparent 30%, rgba(0,0,0,.18) 100%);
   }
   .shiori-head{
-    position:absolute;top:6vh;left:0;right:0;text-align:center;z-index:3;color:var(--ink);
+    position:absolute;top:5vh;left:0;right:0;text-align:center;z-index:3;color:var(--ink);
     opacity:0;transform:translateY(-6px);
     transition:opacity 1.2s .3s ease, transform 1.2s .3s ease;
   }
   .shi-stage.show .shiori-head{opacity:1;transform:translateY(0)}
-  .shiori-head .sh-ovr{font-family:var(--latin);font-weight:300;font-size:10px;letter-spacing:.6em;color:var(--ink-faint);text-transform:uppercase;margin-bottom:10px}
-  .shiori-head .sh-title{font-weight:300;font-size:clamp(20px,2.6vw,30px);letter-spacing:.45em;text-shadow:0 0 24px rgba(0,0,0,.7)}
+  .shiori-head .sh-ovr{font-family:var(--latin);font-weight:300;font-size:10px;letter-spacing:.6em;color:rgba(20,40,60,.55);text-transform:uppercase;margin-bottom:10px;text-shadow:0 1px 0 rgba(255,255,255,.4)}
+  .shiori-head .sh-title{font-weight:300;font-size:clamp(20px,2.6vw,30px);letter-spacing:.45em;color:rgba(20,40,60,.92);text-shadow:0 1px 0 rgba(255,255,255,.4)}
 
-  /* cards row — keeps fixed 340x520; uses padding-as-margin so it auto-centers
-     when the viewport is wide and scrolls horizontally when it isn't (instead of shrinking). */
+  /* time-based card bar — sits above the cards row, scrolls with them */
   .shi-cards-scroll{
-    position:absolute;inset:18vh 0 8vh 0;
+    position:absolute;inset:16vh 0 6vh 0;
     z-index:2;display:flex;align-items:center;
     overflow-x:auto;overflow-y:hidden;
-    padding:0 max(32px, calc((100vw - 1456px) / 2));   /* 4*340 + 3*32 = 1456 */
+    padding:0 max(32px, calc((100vw - 1456px) / 2));
     -webkit-overflow-scrolling:touch;
     scrollbar-width:thin;scrollbar-color:rgba(255,255,255,.2) transparent;
   }
   .shi-cards-scroll::-webkit-scrollbar{height:6px}
   .shi-cards-scroll::-webkit-scrollbar-thumb{background:rgba(255,255,255,.18);border-radius:3px}
+  .cards-block{
+    display:flex;flex-direction:column;
+    gap:42px;flex-shrink:0;
+    width:1456px;        /* 4 × 340 + 3 × 32 */
+    margin:auto 0;
+  }
+  .card-bar{
+    position:relative;
+    height:8px;width:100%;
+    margin-top:10px;
+  }
+  .card-bar-track{
+    position:absolute;inset:0;
+    background:rgba(20,40,60,.22);
+    border-radius:4px;
+    box-shadow:inset 0 1px 2px rgba(0,0,0,.2);
+  }
+  .card-bar-fill{
+    position:absolute;top:0;height:100%;
+    background:linear-gradient(90deg, #6fcf8e, #5cb87c);
+    border-radius:4px;
+    box-shadow:0 0 18px rgba(111,207,142,.55), 0 0 4px rgba(111,207,142,.7);
+    transition:left 1.4s cubic-bezier(.2,.6,.2,1), width 1.4s cubic-bezier(.2,.6,.2,1);
+    left:0;width:0;
+  }
+  .card-bar-now{
+    position:absolute;top:-26px;
+    font-family:var(--latin);font-weight:500;font-size:11px;letter-spacing:.45em;
+    color:#3a7a4d;text-transform:uppercase;
+    transform:translateX(-50%);
+    text-shadow:0 1px 0 rgba(255,255,255,.45);
+    transition:left 1.4s cubic-bezier(.2,.6,.2,1);
+    white-space:nowrap;
+    pointer-events:none;
+  }
+
   .shiori-cards{
     display:flex;gap:32px;align-items:center;
-    margin:auto;
   }
   .shiori-card{
     position:relative;
-    width:340px;height:520px;flex-shrink:0;             /* never shrinks — scrolls instead */
-    background:linear-gradient(165deg, #c5e0ee 0%, #8fc0d8 55%, #6499b5 100%);   /* solid light-blue */
+    width:340px;height:520px;flex-shrink:0;
+    background:#0c1018 center/cover no-repeat;
     border-radius:8px;cursor:pointer;
-    box-shadow:0 18px 50px rgba(0,0,0,.55), 0 0 0 1px rgba(255,255,255,.18) inset, inset 0 1px 0 rgba(255,255,255,.4);
+    box-shadow:0 18px 50px rgba(0,0,0,.45), 0 0 0 1px rgba(255,255,255,.15) inset;
     overflow:hidden;
     opacity:0;transform:translateY(20px);
     transition:transform .6s cubic-bezier(.2,.6,.2,1), opacity 1s ease, box-shadow .5s ease;
@@ -307,22 +334,21 @@
   .shi-stage.show .shiori-card:nth-child(2){transition-delay:.30s}
   .shi-stage.show .shiori-card:nth-child(3){transition-delay:.45s}
   .shi-stage.show .shiori-card:nth-child(4){transition-delay:.60s}
-  .shiori-card:hover{transform:translateY(-8px) !important;box-shadow:0 28px 60px rgba(0,0,0,.65), 0 0 0 1px rgba(255,255,255,.35) inset, 0 0 60px rgba(180,220,240,.18)}
-  /* faint inner accent so the light-blue cards still feel layered */
+  .shiori-card:hover{transform:translateY(-8px) !important;box-shadow:0 28px 60px rgba(0,0,0,.55), 0 0 0 1px rgba(255,255,255,.4) inset, 0 0 60px rgba(180,220,240,.25)}
+  /* dark gradient overlay so the white text reads on any photo */
   .shiori-card::after{
     content:'';position:absolute;inset:0;pointer-events:none;
-    background:radial-gradient(ellipse at 30% 20%, rgba(255,255,255,.22), transparent 60%);
+    background:linear-gradient(180deg, rgba(0,0,0,.25) 0%, transparent 30%, transparent 60%, rgba(0,0,0,.65) 100%);
   }
   .shiori-card .sc-num{
-    position:absolute;top:14px;left:18px;
+    position:absolute;top:14px;left:18px;z-index:2;
     font-family:var(--latin);font-weight:300;font-size:13px;letter-spacing:.4em;
-    color:rgba(20,40,60,.55);
+    color:rgba(255,255,255,.85);text-shadow:0 0 8px rgba(0,0,0,.85);
   }
   .shiori-card .sc-name{
-    position:absolute;bottom:24px;left:0;right:0;text-align:center;
+    position:absolute;bottom:24px;left:0;right:0;z-index:2;text-align:center;
     font-weight:300;font-size:15px;letter-spacing:.45em;
-    color:rgba(20,40,60,.92);
-    text-shadow:0 1px 0 rgba(255,255,255,.45);
+    color:var(--ink);text-shadow:0 0 12px rgba(0,0,0,.85), 0 0 20px rgba(0,0,0,.7);
   }
   .shiori-card.firing{transform:scale(.97) !important;opacity:.45;transition:transform .35s ease, opacity .55s ease}
   .shiori-card.dim{animation:cardDim .7s ease}
@@ -331,7 +357,7 @@
   /* ===== STAGE 3a: tennki sub ===== */
   .shi-tennki-bg{
     position:absolute;inset:0;
-    background:#0c1018 center/cover no-repeat;
+    background:#0c1018 center/contain no-repeat;
     background-image:url('tennki.png');
   }
 
@@ -341,12 +367,17 @@
     background:linear-gradient(180deg, #0a0e15 0%, #060810 100%);
   }
   .shi-photos-head{
-    position:absolute;top:24px;left:50%;transform:translateX(-50%);z-index:4;
+    position:absolute;top:18px;left:50%;transform:translateX(-50%);z-index:4;
     font-weight:300;font-size:18px;letter-spacing:.5em;color:var(--ink);
-    text-shadow:0 0 12px rgba(0,0,0,.7);
+    text-shadow:0 0 12px rgba(0,0,0,.7);text-align:center;line-height:1.3;
+  }
+  .shi-photos-sub{
+    font-weight:300;font-size:11px;letter-spacing:.4em;
+    color:var(--ink-soft);margin-top:6px;
+    text-shadow:0 0 8px rgba(0,0,0,.7);
   }
   .shi-photo-grid{
-    position:absolute;inset:80px 28px 28px 28px;z-index:2;
+    position:absolute;inset:108px 28px 28px 28px;z-index:2;
     display:grid;grid-template-columns:repeat(4, 1fr);gap:14px;
     overflow-y:auto;align-content:start;
     -webkit-overflow-scrolling:touch;
@@ -364,6 +395,30 @@
   .shi-photo-item:hover{transform:scale(1.04);border-color:rgba(255,255,255,.4);box-shadow:0 8px 30px rgba(0,0,0,.5)}
   @media (max-width:1100px){.shi-photo-grid{grid-template-columns:repeat(3, 1fr)}}
   @media (max-width:700px){.shi-photo-grid{grid-template-columns:repeat(2, 1fr)}}
+
+  /* photo lightbox (click photo → fullscreen) */
+  .photo-lightbox{
+    position:fixed;inset:0;z-index:200;
+    background:rgba(0,0,0,.94);
+    display:flex;align-items:center;justify-content:center;padding:24px;
+    opacity:0;pointer-events:none;
+    transition:opacity .5s ease;cursor:pointer;
+  }
+  .photo-lightbox.in{opacity:1;pointer-events:auto}
+  .lightbox-img{
+    max-width:96vw;max-height:92vh;
+    object-fit:contain;
+    box-shadow:0 24px 80px rgba(0,0,0,.7);
+    border:1px solid rgba(255,255,255,.12);
+    cursor:default;
+    background:#0a0d13;
+  }
+  .lightbox-hint{
+    position:absolute;bottom:24px;left:0;right:0;text-align:center;
+    font-family:var(--latin);font-weight:300;font-size:10px;letter-spacing:.5em;
+    color:rgba(255,255,255,.45);text-transform:uppercase;
+    pointer-events:none;
+  }
 
   /* ===== STAGE 3c: okujyou sub ===== */
   .shi-okujyou-bg{
@@ -778,11 +833,7 @@
   const PHOTOS = [
     'photo1.png', 'photo2.png', 'photo3.png', 'photo4.png',
     'photo5.png', 'photo6.png', 'photo7.png', 'photo8.png',
-     'photo9.png', 'photo10.png', 'photo11.png', 'photo12.png', 
-    'photo13.png', 'photo614.png', 'photo15.png', 'photo16.png',
-     'photo17.png', 'photo18.png', 'photo19.png', 'photo20.png',
-     'photo21.png', // add more here — the grid scrolls vertically.
-    
+    // add more here — the grid scrolls vertically.
   ];
 
   const OKUJYOU_ID = '89GV0QP8G50E';
