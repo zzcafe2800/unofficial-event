@@ -228,28 +228,25 @@
     position:absolute;inset:0;
     background:#0c1018 center/cover no-repeat;
     background-image:url('setu2.png');
-    transform:scale(1.04);transition:transform 6s ease;
   }
-  .shi-stage.show .shi-intro-bg{transform:scale(1)}
   .shi-intro-bg::after{
     content:'';position:absolute;inset:0;
-    background:linear-gradient(180deg, transparent 0%, transparent 60%, rgba(0,0,0,.45) 100%);
+    background:linear-gradient(180deg, transparent 0%, transparent 70%, rgba(0,0,0,.35) 100%);
   }
+  /* text-only "遊ぶ" — no blur, no shadow, no background, so the photo behind stays sharp */
   .shi-play-btn{
-    position:absolute;right:6vw;bottom:7vh;z-index:3;
-    background:rgba(0,0,0,.55);border:1px solid var(--ink);color:var(--ink);
+    position:absolute;right:7vw;bottom:8vh;z-index:3;
+    background:transparent;border:none;color:var(--ink);
     font-family:var(--serif);font-weight:300;
-    font-size:clamp(20px,2.6vw,30px);letter-spacing:.6em;
-    padding:22px 70px 22px 80px;cursor:pointer;
-    transition:all .4s ease;
-    text-shadow:0 0 12px rgba(0,0,0,.7);
-    box-shadow:0 12px 36px rgba(0,0,0,.5);
-    backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px);
+    font-size:clamp(22px,3vw,34px);letter-spacing:.7em;padding:14px 24px 14px 38px;
+    cursor:pointer;
+    transition:opacity .4s ease, transform .4s ease, letter-spacing .4s ease;
     opacity:0;transform:translateY(8px);
     animation:playBtnIn 1.4s 1.2s ease forwards;
   }
   @keyframes playBtnIn{to{opacity:1;transform:translateY(0)}}
-  .shi-play-btn:hover{background:rgba(255,255,255,.12);transform:translateY(-2px)}
+  .shi-play-btn:hover{letter-spacing:.85em;opacity:.85}
+  .shi-play-btn:focus{outline:none}
 
   /* ===== STAGE 2: cards (light-blue background, card1-4.png images on cards) ===== */
   .shi-cards-bg{
@@ -553,7 +550,6 @@
 
   <!-- ============== しおり (multi-stage) ============== -->
   <div class="shiori" id="shiori">
-    <button class="shiori-close" id="shioriClose" aria-label="閉じる">×</button>
 
     <!-- STAGE 1: intro (setu2.png with 遊ぶ button) -->
     <div class="shi-stage" id="shi-intro">
@@ -561,7 +557,7 @@
       <button class="shi-play-btn" id="shiPlayBtn">遊　ぶ</button>
     </div>
 
-    <!-- STAGE 2: 4 cards (solid light-blue) -->
+    <!-- STAGE 2: 4 cards (light-blue stage bg, card1-4.png as their own images) -->
     <div class="shi-stage" id="shi-cards">
       <div class="shi-cards-bg"></div>
       <div class="shiori-head">
@@ -569,22 +565,30 @@
         <div class="sh-title">し　お　り</div>
       </div>
       <div class="shi-cards-scroll">
-        <div class="shiori-cards">
-          <div class="shiori-card" data-card="1" data-href="https://zzcafe2800.github.io/chahan/">
-            <div class="sc-num">01</div>
-            <div class="sc-name">３ 人 で チ ャ ー ハ ン 作 り</div>
+        <div class="cards-block">
+          <!-- time-based bar above cards: green = "現在できること" -->
+          <div class="card-bar">
+            <div class="card-bar-track"></div>
+            <div class="card-bar-fill" id="cardBarFill"></div>
+            <div class="card-bar-now" id="cardBarNow">現　在</div>
           </div>
-          <div class="shiori-card" data-card="2">
-            <div class="sc-num">02</div>
-            <div class="sc-name">天 気 探 し</div>
-          </div>
-          <div class="shiori-card" data-card="3">
-            <div class="sc-num">03</div>
-            <div class="sc-name">参 考 フ ォ ト 集</div>
-          </div>
-          <div class="shiori-card" data-card="4">
-            <div class="sc-num">04</div>
-            <div class="sc-name">屋 　 上</div>
+          <div class="shiori-cards">
+            <div class="shiori-card" data-card="1" data-href="https://zzcafe2800.github.io/chahan/" style="background-image:url('card1.png')">
+              <div class="sc-num">01</div>
+              <div class="sc-name">３ 人 で チ ャ ー ハ ン 作 り</div>
+            </div>
+            <div class="shiori-card" data-card="2" style="background-image:url('card2.png')">
+              <div class="sc-num">02</div>
+              <div class="sc-name">天 気 探 し</div>
+            </div>
+            <div class="shiori-card" data-card="3" style="background-image:url('card3.png')">
+              <div class="sc-num">03</div>
+              <div class="sc-name">参 考 フ ォ ト 集</div>
+            </div>
+            <div class="shiori-card" data-card="4" style="background-image:url('card4.png')">
+              <div class="sc-num">04</div>
+              <div class="sc-name">屋 　 上</div>
+            </div>
           </div>
         </div>
       </div>
@@ -596,11 +600,14 @@
       <div class="shi-tennki-bg"></div>
     </div>
 
-    <!-- STAGE 3b: 参考フォト集 → grid (4 columns, scrolls) -->
+    <!-- STAGE 3b: 参考フォト集 → grid (4 columns, scrolls). Click → lightbox -->
     <div class="shi-stage" id="shi-photos">
       <button class="shi-back" data-back="cards">← back</button>
       <div class="shi-photos-bg"></div>
-      <div class="shi-photos-head">参 考 フ ォ ト 集</div>
+      <div class="shi-photos-head">
+        参 考 フ ォ ト 集
+        <div class="shi-photos-sub">— オ ス ス メ 画 角 集 —</div>
+      </div>
       <div class="shi-photo-grid" id="shiPhotoGrid"></div>
     </div>
 
@@ -615,6 +622,12 @@
         <button class="oku-copy" id="okuCopyBtn">コ ピ ー</button>
       </div>
     </div>
+  </div>
+
+  <!-- photo lightbox (click any photo in 参考フォト集 to view full-size) -->
+  <div class="photo-lightbox" id="photoLightbox" role="dialog" aria-label="フォトを拡大表示">
+    <img class="lightbox-img" id="lightboxImg" alt="" draggable="false">
+    <div class="lightbox-hint">tap to close</div>
   </div>
 
   <!-- audio -->
@@ -655,11 +668,11 @@
   const umbrellaBtn = $('umbrellaBtn');
   const honkeBtn = $('honkeBtn'), honkeModal = $('honkeModal'), honkeClose = $('honkeClose'), honkeIframe = $('honkeIframe');
   const lbarTop = $('lbarTop'), lbarBot = $('lbarBot');
-  const shiori = $('shiori'), shioriClose = $('shioriClose');
+  const shiori = $('shiori');
 
   // null-check critical elements; if any are missing, log them visibly
   var missingEls = [];
-  ['titleWrap','tapHint','bgFallback','bgImageA','bgImageB','rainAudio','clickAudio','umbrellaBtn','honkeBtn','honkeModal','honkeClose','honkeIframe','lbarTop','lbarBot','shiori','shioriClose'].forEach(function(id){
+  ['titleWrap','tapHint','bgFallback','bgImageA','bgImageB','rainAudio','clickAudio','umbrellaBtn','honkeBtn','honkeModal','honkeClose','honkeIframe','lbarTop','lbarBot','shiori'].forEach(function(id){
     if(!document.getElementById(id)) missingEls.push(id);
   });
   if(missingEls.length){
@@ -831,8 +844,12 @@
 
   // photo gallery: add filenames here. They'll appear in a 4-column grid (auto-scrolls).
   const PHOTOS = [
-    'photo1.png', 'photo2.png', 'photo3.png', 'photo4.png',
-    'photo5.png', 'photo6.png', 'photo7.png', 'photo8.png',
+    'photo1.png',  'photo2.png',  'photo3.png',  'photo4.png',
+    'photo5.png',  'photo6.png',  'photo7.png',  'photo8.png',
+    'photo9.png',  'photo10.png', 'photo11.png', 'photo12.png',
+    'photo13.png', 'photo14.png', 'photo15.png', 'photo16.png',
+    'photo17.png', 'photo18.png', 'photo19.png', 'photo20.png',
+    'photo21.png'
     // add more here — the grid scrolls vertically.
   ];
 
@@ -847,6 +864,7 @@
       if(el) el.classList.toggle('show', id === s);
     });
     if(s === 'photos') renderPhotoGrid();
+    if(s === 'cards')  updateCardBar();
   }
 
   function renderPhotoGrid(){
@@ -858,10 +876,72 @@
       const div = document.createElement('div');
       div.className = 'shi-photo-item';
       div.style.backgroundImage = `url('${src}')`;
+      div.addEventListener('click', ()=> openLightbox(src));
       grid.appendChild(div);
     });
     grid.dataset.rendered = '1';
   }
+
+  // ---------- photo lightbox (click any photo → fullscreen view) ----------
+  const lightbox = document.getElementById('photoLightbox');
+  const lightboxImg = document.getElementById('lightboxImg');
+  function openLightbox(src){
+    if(!lightbox || !lightboxImg) return;
+    lightboxImg.src = src;
+    lightbox.classList.add('in');
+  }
+  function closeLightbox(){
+    if(!lightbox) return;
+    lightbox.classList.remove('in');
+    setTimeout(()=>{ if(lightboxImg) lightboxImg.src = ''; }, 500);
+  }
+  if(lightbox){
+    lightbox.addEventListener('click', closeLightbox);
+    document.addEventListener('keydown', e=>{
+      if(e.key === 'Escape' && lightbox.classList.contains('in')) closeLightbox();
+    });
+  }
+
+  // ---------- time-based card bar (JST 21:40 cutoff) ----------
+  // Bar is 1456px wide (= 4 × 340 + 3 × 32). Card positions, in px on the bar:
+  //   card1: 0   – 340   |   card2: 372 – 712
+  //   card3: 744 – 1084  |   card4: 1116 – 1456
+  // Before 21:40 JST: green covers card1 left → card3 right (0 → 1084).
+  // After 21:40    : green covers card 4 only (1116 → 1456).
+  function updateCardBar(){
+    const fill = document.getElementById('cardBarFill');
+    const now  = document.getElementById('cardBarNow');
+    if(!fill || !now) return;
+
+    let h = 0, m = 0;
+    try{
+      const fmt = new Intl.DateTimeFormat('en-US', {
+        timeZone: 'Asia/Tokyo', hour12: false, hour: '2-digit', minute: '2-digit'
+      });
+      const parts = fmt.formatToParts(new Date());
+      h = parseInt(parts.find(p=>p.type==='hour').value, 10);
+      m = parseInt(parts.find(p=>p.type==='minute').value, 10);
+    }catch(e){
+      const d = new Date();   // fallback assumes browser is in JST
+      h = d.getHours(); m = d.getMinutes();
+    }
+    const totalM  = h * 60 + m;
+    const cutoffM = 21 * 60 + 40;
+
+    if(totalM < cutoffM){
+      // cards 1-3 are "now"
+      fill.style.left  = '0px';
+      fill.style.width = '1084px';
+      now.style.left   = '542px';        // mid-point of 0..1084
+    }else{
+      // card 4 is "now"
+      fill.style.left  = '1116px';
+      fill.style.width = '340px';
+      now.style.left   = '1286px';       // mid-point of card 4 (1116 + 170)
+    }
+  }
+  // refresh on shiori open + every minute, so the bar flips automatically at 21:40 JST
+  setInterval(updateCardBar, 60 * 1000);
 
   umbrellaBtn.addEventListener('click', (e)=>{
     e.stopPropagation();
@@ -873,7 +953,7 @@
     shiori.classList.add('in');
   });
 
-  shioriClose.addEventListener('click', e=>{ e.stopPropagation(); closeShiori(); });
+  // (× button removed — closing the shiori is handled by external nav from card 1, by design)
   function closeShiori(){
     shiori.classList.remove('in');
     topState = 'home';
