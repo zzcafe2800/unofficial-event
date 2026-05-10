@@ -192,58 +192,219 @@
   /* =========================================================
      しおり (bookmark) screen — 4 cards centered
      ========================================================= */
+  /* ---------- しおり (multi-stage: intro → cards → sub-screens) ---------- */
   .shiori{
-    position:fixed;inset:0;z-index:50;display:flex;flex-direction:column;align-items:center;justify-content:center;
+    position:fixed;inset:0;z-index:50;
     opacity:0;pointer-events:none;transition:opacity 1.2s ease;
+    overflow:hidden;
   }
   .shiori.in{opacity:1;pointer-events:auto}
-  .shiori-bg{
-    position:absolute;inset:0;background:#000 center/cover no-repeat;
-    background-image:url('card5.png');
+  .shiori-close{
+    position:absolute;top:24px;right:28px;z-index:60;
+    width:36px;height:36px;border-radius:50%;
+    border:1px solid var(--ink-faint);background:rgba(0,0,0,.4);color:var(--ink-soft);
+    cursor:pointer;font-size:18px;
+    display:flex;align-items:center;justify-content:center;transition:all .3s ease;
+    backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px);
+  }
+  .shiori-close:hover{border-color:var(--ink);color:var(--ink);background:rgba(244,246,251,.1)}
+
+  /* generic stage that fades in/out within the shiori */
+  .shi-stage{
+    position:absolute;inset:0;
+    opacity:0;pointer-events:none;
+    transition:opacity .9s ease;
+  }
+  .shi-stage.show{opacity:1;pointer-events:auto}
+
+  /* sub-screen back button (for tennki/photos/okujyou) */
+  .shi-back{
+    position:absolute;top:24px;left:24px;z-index:55;
+    background:rgba(0,0,0,.4);border:1px solid var(--ink-faint);color:var(--ink-soft);
+    font-family:var(--latin);font-weight:300;font-size:11px;letter-spacing:.4em;
+    padding:9px 16px 9px 14px;cursor:pointer;text-transform:uppercase;
+    transition:all .3s ease;
+    backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px);
+  }
+  .shi-back:hover{border-color:var(--ink);color:var(--ink);background:rgba(244,246,251,.08)}
+
+  /* ===== STAGE 1: intro (setu2.png) ===== */
+  .shi-intro-bg{
+    position:absolute;inset:0;
+    background:#0c1018 center/cover no-repeat;
+    background-image:url('setu2.png');
     transform:scale(1.04);transition:transform 6s ease;
   }
-  .shiori.in .shiori-bg{transform:scale(1)}
-  .shiori-bg::after{content:'';position:absolute;inset:0;background:linear-gradient(180deg, rgba(0,0,0,.55), rgba(0,0,0,.35) 40%, rgba(0,0,0,.7))}
-  .shiori-head{position:absolute;top:6vh;left:0;right:0;text-align:center;z-index:2;color:var(--ink);opacity:0;transform:translateY(-6px);transition:opacity 1.2s .3s ease, transform 1.2s .3s ease}
-  .shiori.in .shiori-head{opacity:1;transform:translateY(0)}
+  .shi-stage.show .shi-intro-bg{transform:scale(1)}
+  .shi-intro-bg::after{
+    content:'';position:absolute;inset:0;
+    background:linear-gradient(180deg, transparent 0%, transparent 60%, rgba(0,0,0,.45) 100%);
+  }
+  .shi-play-btn{
+    position:absolute;right:6vw;bottom:7vh;z-index:3;
+    background:rgba(0,0,0,.55);border:1px solid var(--ink);color:var(--ink);
+    font-family:var(--serif);font-weight:300;
+    font-size:clamp(20px,2.6vw,30px);letter-spacing:.6em;
+    padding:22px 70px 22px 80px;cursor:pointer;
+    transition:all .4s ease;
+    text-shadow:0 0 12px rgba(0,0,0,.7);
+    box-shadow:0 12px 36px rgba(0,0,0,.5);
+    backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px);
+    opacity:0;transform:translateY(8px);
+    animation:playBtnIn 1.4s 1.2s ease forwards;
+  }
+  @keyframes playBtnIn{to{opacity:1;transform:translateY(0)}}
+  .shi-play-btn:hover{background:rgba(255,255,255,.12);transform:translateY(-2px)}
+
+  /* ===== STAGE 2: cards ===== */
+  .shi-cards-stage{}
+  .shi-cards-bg{
+    position:absolute;inset:0;
+    background:#000 center/cover no-repeat;
+    background-image:url('card5.png');
+  }
+  .shi-cards-bg::after{
+    content:'';position:absolute;inset:0;
+    background:linear-gradient(180deg, rgba(0,0,0,.55), rgba(0,0,0,.35) 40%, rgba(0,0,0,.7));
+  }
+  .shiori-head{
+    position:absolute;top:6vh;left:0;right:0;text-align:center;z-index:3;color:var(--ink);
+    opacity:0;transform:translateY(-6px);
+    transition:opacity 1.2s .3s ease, transform 1.2s .3s ease;
+  }
+  .shi-stage.show .shiori-head{opacity:1;transform:translateY(0)}
   .shiori-head .sh-ovr{font-family:var(--latin);font-weight:300;font-size:10px;letter-spacing:.6em;color:var(--ink-faint);text-transform:uppercase;margin-bottom:10px}
   .shiori-head .sh-title{font-weight:300;font-size:clamp(20px,2.6vw,30px);letter-spacing:.45em;text-shadow:0 0 24px rgba(0,0,0,.7)}
 
+  /* cards row — keeps fixed 340x520; uses padding-as-margin so it auto-centers
+     when the viewport is wide and scrolls horizontally when it isn't (instead of shrinking). */
+  .shi-cards-scroll{
+    position:absolute;inset:18vh 0 8vh 0;
+    z-index:2;display:flex;align-items:center;
+    overflow-x:auto;overflow-y:hidden;
+    padding:0 max(32px, calc((100vw - 1456px) / 2));   /* 4*340 + 3*32 = 1456 */
+    -webkit-overflow-scrolling:touch;
+    scrollbar-width:thin;scrollbar-color:rgba(255,255,255,.2) transparent;
+  }
+  .shi-cards-scroll::-webkit-scrollbar{height:6px}
+  .shi-cards-scroll::-webkit-scrollbar-thumb{background:rgba(255,255,255,.18);border-radius:3px}
   .shiori-cards{
-    position:relative;z-index:2;
-    display:flex;justify-content:center;align-items:center;gap:32px;
-    padding:0 24px;
+    display:flex;gap:32px;align-items:center;
+    margin:auto;
   }
   .shiori-card{
-    position:relative;width:340px;height:520px;flex-shrink:0;
-    background:#0c1018 center/cover no-repeat;
-    border-radius:6px;cursor:pointer;
-    box-shadow:0 18px 50px rgba(0,0,0,.6), 0 0 0 1px rgba(244,246,251,.06) inset;
+    position:relative;
+    width:340px;height:520px;flex-shrink:0;             /* never shrinks — scrolls instead */
+    background:linear-gradient(165deg, #c5e0ee 0%, #8fc0d8 55%, #6499b5 100%);   /* solid light-blue */
+    border-radius:8px;cursor:pointer;
+    box-shadow:0 18px 50px rgba(0,0,0,.55), 0 0 0 1px rgba(255,255,255,.18) inset, inset 0 1px 0 rgba(255,255,255,.4);
     overflow:hidden;
     opacity:0;transform:translateY(20px);
-    transition:transform .8s cubic-bezier(.2,.6,.2,1), opacity 1.2s ease, box-shadow .5s ease;
+    transition:transform .6s cubic-bezier(.2,.6,.2,1), opacity 1s ease, box-shadow .5s ease;
   }
-  .shiori.in .shiori-card{opacity:1;transform:translateY(0)}
-  .shiori.in .shiori-card:nth-child(1){transition-delay:.5s}
-  .shiori.in .shiori-card:nth-child(2){transition-delay:.65s}
-  .shiori.in .shiori-card:nth-child(3){transition-delay:.8s}
-  .shiori.in .shiori-card:nth-child(4){transition-delay:.95s}
-  .shiori-card:hover{transform:translateY(-8px) !important;box-shadow:0 28px 60px rgba(0,0,0,.7), 0 0 0 1px rgba(217,184,138,.25) inset, 0 0 60px rgba(217,184,138,.12)}
-  .shiori-card .sc-num{position:absolute;top:12px;left:14px;font-family:var(--latin);font-weight:300;font-size:11px;letter-spacing:.4em;color:var(--ink-faint);text-shadow:0 0 8px rgba(0,0,0,.8)}
-  .shiori-card .sc-name{position:absolute;bottom:18px;left:0;right:0;text-align:center;font-weight:300;font-size:14px;letter-spacing:.4em;color:var(--ink);text-shadow:0 0 12px rgba(0,0,0,.85)}
-  .shiori-close{position:absolute;top:24px;right:28px;z-index:3;width:36px;height:36px;border-radius:50%;border:1px solid var(--ink-faint);background:transparent;color:var(--ink-soft);cursor:pointer;font-size:18px;display:flex;align-items:center;justify-content:center;transition:all .3s ease}
-  .shiori-close:hover{border-color:var(--ink);color:var(--ink);background:rgba(244,246,251,.06)}
-
-  /* responsive: scale down cards on smaller screens */
-  @media (max-width:1500px){.shiori-card{width:300px;height:460px}.shiori-cards{gap:24px}}
-  @media (max-width:1280px){.shiori-card{width:240px;height:368px}.shiori-cards{gap:18px}}
-  @media (max-width:1024px){.shiori-cards{flex-wrap:wrap;max-width:760px}.shiori-card{width:calc(50% - 12px);max-width:340px;height:auto;aspect-ratio:340/520}}
-  @media (max-width:540px){.shiori-card{width:calc(50% - 8px)}.shiori-cards{gap:14px;padding:90px 16px 16px}}
-
-  /* card click → external navigation transitions */
+  .shi-stage.show .shiori-card{opacity:1;transform:translateY(0)}
+  .shi-stage.show .shiori-card:nth-child(1){transition-delay:.15s}
+  .shi-stage.show .shiori-card:nth-child(2){transition-delay:.30s}
+  .shi-stage.show .shiori-card:nth-child(3){transition-delay:.45s}
+  .shi-stage.show .shiori-card:nth-child(4){transition-delay:.60s}
+  .shiori-card:hover{transform:translateY(-8px) !important;box-shadow:0 28px 60px rgba(0,0,0,.65), 0 0 0 1px rgba(255,255,255,.35) inset, 0 0 60px rgba(180,220,240,.18)}
+  /* faint inner accent so the light-blue cards still feel layered */
+  .shiori-card::after{
+    content:'';position:absolute;inset:0;pointer-events:none;
+    background:radial-gradient(ellipse at 30% 20%, rgba(255,255,255,.22), transparent 60%);
+  }
+  .shiori-card .sc-num{
+    position:absolute;top:14px;left:18px;
+    font-family:var(--latin);font-weight:300;font-size:13px;letter-spacing:.4em;
+    color:rgba(20,40,60,.55);
+  }
+  .shiori-card .sc-name{
+    position:absolute;bottom:24px;left:0;right:0;text-align:center;
+    font-weight:300;font-size:15px;letter-spacing:.45em;
+    color:rgba(20,40,60,.92);
+    text-shadow:0 1px 0 rgba(255,255,255,.45);
+  }
   .shiori-card.firing{transform:scale(.97) !important;opacity:.45;transition:transform .35s ease, opacity .55s ease}
   .shiori-card.dim{animation:cardDim .7s ease}
   @keyframes cardDim{0%,100%{opacity:1}40%{opacity:.35}}
+
+  /* ===== STAGE 3a: tennki sub ===== */
+  .shi-tennki-bg{
+    position:absolute;inset:0;
+    background:#0c1018 center/cover no-repeat;
+    background-image:url('tennki.png');
+  }
+
+  /* ===== STAGE 3b: photos sub ===== */
+  .shi-photos-bg{
+    position:absolute;inset:0;
+    background:linear-gradient(180deg, #0a0e15 0%, #060810 100%);
+  }
+  .shi-photos-head{
+    position:absolute;top:24px;left:50%;transform:translateX(-50%);z-index:4;
+    font-weight:300;font-size:18px;letter-spacing:.5em;color:var(--ink);
+    text-shadow:0 0 12px rgba(0,0,0,.7);
+  }
+  .shi-photo-grid{
+    position:absolute;inset:80px 28px 28px 28px;z-index:2;
+    display:grid;grid-template-columns:repeat(4, 1fr);gap:14px;
+    overflow-y:auto;align-content:start;
+    -webkit-overflow-scrolling:touch;
+    scrollbar-width:thin;scrollbar-color:rgba(255,255,255,.2) transparent;
+  }
+  .shi-photo-grid::-webkit-scrollbar{width:6px}
+  .shi-photo-grid::-webkit-scrollbar-thumb{background:rgba(255,255,255,.18);border-radius:3px}
+  .shi-photo-item{
+    aspect-ratio:1;
+    background:#1a1f2a center/cover no-repeat;
+    border:1px solid rgba(255,255,255,.08);border-radius:4px;
+    cursor:pointer;
+    transition:transform .3s ease, border-color .3s ease, box-shadow .3s ease;
+  }
+  .shi-photo-item:hover{transform:scale(1.04);border-color:rgba(255,255,255,.4);box-shadow:0 8px 30px rgba(0,0,0,.5)}
+  @media (max-width:1100px){.shi-photo-grid{grid-template-columns:repeat(3, 1fr)}}
+  @media (max-width:700px){.shi-photo-grid{grid-template-columns:repeat(2, 1fr)}}
+
+  /* ===== STAGE 3c: okujyou sub ===== */
+  .shi-okujyou-bg{
+    position:absolute;inset:0;
+    background:#0c1018 center/cover no-repeat;
+    background-image:url('okujyou.png');
+  }
+  .shi-okujyou-bg::after{
+    content:'';position:absolute;inset:0;
+    background:radial-gradient(ellipse at center, transparent 30%, rgba(0,0,0,.55) 90%);
+  }
+  .shi-okujyou-content{
+    position:absolute;inset:0;z-index:3;
+    display:flex;flex-direction:column;align-items:center;justify-content:center;
+    gap:18px;
+  }
+  .oku-overline{
+    font-family:var(--latin);font-weight:300;font-size:11px;letter-spacing:.6em;
+    color:var(--ink-faint);text-transform:uppercase;
+    text-shadow:0 0 8px rgba(0,0,0,.85);
+  }
+  .oku-label{
+    font-weight:300;font-size:14px;letter-spacing:.5em;color:var(--ink-soft);
+    text-shadow:0 0 12px rgba(0,0,0,.85);
+  }
+  .oku-id{
+    font-family:var(--latin);font-weight:400;font-size:clamp(26px,4vw,42px);letter-spacing:.18em;
+    color:var(--ink);text-shadow:0 0 18px rgba(0,0,0,.85);
+    background:rgba(0,0,0,.5);padding:14px 36px;border:1px solid rgba(255,255,255,.18);
+    backdrop-filter:blur(4px);-webkit-backdrop-filter:blur(4px);
+    user-select:all;
+  }
+  .oku-copy{
+    background:rgba(0,0,0,.4);border:1px solid var(--ink-soft);color:var(--ink);
+    font-family:var(--serif);font-weight:300;font-size:13px;letter-spacing:.45em;
+    padding:13px 36px;cursor:pointer;transition:all .35s ease;
+    backdrop-filter:blur(4px);-webkit-backdrop-filter:blur(4px);
+  }
+  .oku-copy:hover{background:rgba(255,255,255,.1)}
+  .oku-copy.copied{border-color:#d9b88a;color:#d9b88a}
+
   body.fade-out{opacity:0;transition:opacity .8s ease}
 
   /* misc */
@@ -335,30 +496,68 @@
     <div class="h-meta">© toho · official trailer</div>
   </div>
 
-  <!-- ============== しおり ============== -->
+  <!-- ============== しおり (multi-stage) ============== -->
   <div class="shiori" id="shiori">
-    <div class="shiori-bg"></div>
     <button class="shiori-close" id="shioriClose" aria-label="閉じる">×</button>
-    <div class="shiori-head">
-      <div class="sh-ovr">— program —</div>
-      <div class="sh-title">し　お　り</div>
+
+    <!-- STAGE 1: intro (setu2.png with 遊ぶ button) -->
+    <div class="shi-stage" id="shi-intro">
+      <div class="shi-intro-bg"></div>
+      <button class="shi-play-btn" id="shiPlayBtn">遊　ぶ</button>
     </div>
-    <div class="shiori-cards">
-      <div class="shiori-card" data-card="1" data-href="https://zzcafe2800.github.io/chahan/" style="background-image:url('card1.png')">
-        <div class="sc-num">01</div>
-        <div class="sc-name">３ 人 で チ ャ ー ハ ン 作 り</div>
+
+    <!-- STAGE 2: 4 cards (solid light-blue) -->
+    <div class="shi-stage" id="shi-cards">
+      <div class="shi-cards-bg"></div>
+      <div class="shiori-head">
+        <div class="sh-ovr">— program —</div>
+        <div class="sh-title">し　お　り</div>
       </div>
-      <div class="shiori-card" data-card="2" data-href="" style="background-image:url('card2.png')">
-        <div class="sc-num">02</div>
-        <div class="sc-name">天 気 探 し</div>
+      <div class="shi-cards-scroll">
+        <div class="shiori-cards">
+          <div class="shiori-card" data-card="1" data-href="https://zzcafe2800.github.io/chahan/">
+            <div class="sc-num">01</div>
+            <div class="sc-name">３ 人 で チ ャ ー ハ ン 作 り</div>
+          </div>
+          <div class="shiori-card" data-card="2">
+            <div class="sc-num">02</div>
+            <div class="sc-name">天 気 探 し</div>
+          </div>
+          <div class="shiori-card" data-card="3">
+            <div class="sc-num">03</div>
+            <div class="sc-name">参 考 フ ォ ト 集</div>
+          </div>
+          <div class="shiori-card" data-card="4">
+            <div class="sc-num">04</div>
+            <div class="sc-name">屋 　 上</div>
+          </div>
+        </div>
       </div>
-      <div class="shiori-card" data-card="3" data-href="" style="background-image:url('card3.png')">
-        <div class="sc-num">03</div>
-        <div class="sc-name">参 考 フ ォ ト 集</div>
-      </div>
-      <div class="shiori-card" data-card="4" data-href="" style="background-image:url('card4.png')">
-        <div class="sc-num">04</div>
-        <div class="sc-name">そ の 他</div>
+    </div>
+
+    <!-- STAGE 3a: 天気探し → tennki.png -->
+    <div class="shi-stage" id="shi-tennki">
+      <button class="shi-back" data-back="cards">← back</button>
+      <div class="shi-tennki-bg"></div>
+    </div>
+
+    <!-- STAGE 3b: 参考フォト集 → grid (4 columns, scrolls) -->
+    <div class="shi-stage" id="shi-photos">
+      <button class="shi-back" data-back="cards">← back</button>
+      <div class="shi-photos-bg"></div>
+      <div class="shi-photos-head">参 考 フ ォ ト 集</div>
+      <div class="shi-photo-grid" id="shiPhotoGrid"></div>
+    </div>
+
+    <!-- STAGE 3c: 屋上 → ID + copy -->
+    <div class="shi-stage" id="shi-okujyou">
+      <button class="shi-back" data-back="cards">← back</button>
+      <div class="shi-okujyou-bg"></div>
+      <div class="shi-okujyou-content">
+        <div class="oku-overline">— rooftop —</div>
+        <div class="oku-label">屋 上 ID</div>
+        <div class="oku-id" id="okuId">89GV0QP8G50E</div>
+        <button class="oku-copy" id="okuCopyBtn">コ ピ ー</button>
       </div>
     </div>
   </div>
@@ -572,32 +771,127 @@
   honkeModal.addEventListener('click', e=>{ if(e.target === honkeModal) closeHonke(); });
   document.addEventListener('keydown', e=>{ if(e.key === 'Escape' && honkeModal.classList.contains('in')) closeHonke(); });
 
-  // ---------- umbrella → しおり ----------
+  // ---------- umbrella → しおり (multi-stage) ----------
   window.__bootStep = 'umbrella-shiori-setup';
+
+  // photo gallery: add filenames here. They'll appear in a 4-column grid (auto-scrolls).
+  const PHOTOS = [
+    'photo1.png', 'photo2.png', 'photo3.png', 'photo4.png',
+    'photo5.png', 'photo6.png', 'photo7.png', 'photo8.png',
+    // add more here — the grid scrolls vertically.
+  ];
+
+  const OKUJYOU_ID = '89GV0QP8G50E';
+
+  const SHI_STAGES = ['intro','cards','tennki','photos','okujyou'];
+  let shiStage = 'intro';
+  function setShioriStage(s){
+    shiStage = s;
+    SHI_STAGES.forEach(id => {
+      const el = document.getElementById('shi-' + id);
+      if(el) el.classList.toggle('show', id === s);
+    });
+    if(s === 'photos') renderPhotoGrid();
+  }
+
+  function renderPhotoGrid(){
+    const grid = document.getElementById('shiPhotoGrid');
+    if(!grid) return;
+    if(grid.dataset.rendered === '1') return;   // render once per shiori session
+    grid.innerHTML = '';
+    PHOTOS.forEach(src => {
+      const div = document.createElement('div');
+      div.className = 'shi-photo-item';
+      div.style.backgroundImage = `url('${src}')`;
+      grid.appendChild(div);
+    });
+    grid.dataset.rendered = '1';
+  }
+
   umbrellaBtn.addEventListener('click', (e)=>{
     e.stopPropagation();
     console.log('[event] umbrella clicked, topState=', topState);
     if(topState !== 'home') return;
     topState = 'shiori';
     pauseAmbient();
+    setShioriStage('intro');           // always open at the intro stage
     shiori.classList.add('in');
   });
+
   shioriClose.addEventListener('click', e=>{ e.stopPropagation(); closeShiori(); });
   function closeShiori(){
     shiori.classList.remove('in');
     topState = 'home';
     resumeAmbient();
+    // small delay before resetting stage so the fade-out doesn't visibly snap to intro
+    setTimeout(()=>{ setShioriStage('intro'); }, 700);
   }
+
+  // 遊ぶ button on the intro stage → reveal cards
+  document.getElementById('shiPlayBtn').addEventListener('click', e=>{
+    e.stopPropagation();
+    setShioriStage('cards');
+    try{
+      clickAudio.currentTime = 0;
+      clickAudio.volume = 0.7;
+      const p = clickAudio.play(); if(p && p.catch) p.catch(()=>{});
+    }catch(e){}
+  });
+
+  // back buttons on sub-screens → return to cards
+  document.querySelectorAll('.shi-back').forEach(btn => {
+    btn.addEventListener('click', e=>{
+      e.stopPropagation();
+      const back = btn.dataset.back || 'cards';
+      setShioriStage(back);
+    });
+  });
+
+  // copy button (屋上 ID)
+  const okuCopyBtn = document.getElementById('okuCopyBtn');
+  okuCopyBtn.addEventListener('click', async ()=>{
+    try{
+      await navigator.clipboard.writeText(OKUJYOU_ID);
+      flashCopied();
+    }catch(err){
+      // fallback for older browsers / non-secure contexts
+      try{
+        const ta = document.createElement('textarea');
+        ta.value = OKUJYOU_ID;
+        ta.style.cssText = 'position:fixed;opacity:0;left:-9999px';
+        document.body.appendChild(ta);
+        ta.select();
+        document.execCommand('copy');
+        document.body.removeChild(ta);
+        flashCopied();
+      }catch(e2){
+        okuCopyBtn.textContent = 'コ ピ ー 失 敗';
+        setTimeout(()=>{ okuCopyBtn.textContent = 'コ ピ ー'; }, 2000);
+      }
+    }
+  });
+  function flashCopied(){
+    okuCopyBtn.textContent = 'コ ピ ー し ま し た';
+    okuCopyBtn.classList.add('copied');
+    setTimeout(()=>{
+      okuCopyBtn.textContent = 'コ ピ ー';
+      okuCopyBtn.classList.remove('copied');
+    }, 2000);
+  }
+
+  // card click — card 1 navigates externally; cards 2/3/4 open sub-stages
   document.querySelectorAll('.shiori-card').forEach(card=>{
     card.addEventListener('click', ()=>{
+      const which = card.dataset.card;
+
+      // sub-stage cards
+      if(which === '2'){ setShioriStage('tennki'); flashCard(card); return; }
+      if(which === '3'){ setShioriStage('photos'); flashCard(card); return; }
+      if(which === '4'){ setShioriStage('okujyou'); flashCard(card); return; }
+
+      // card 1 → external navigate
       const url = card.dataset.href;
-      if(!url){
-        // soft "not yet" feedback for cards still being built
-        card.classList.add('dim');
-        setTimeout(()=>card.classList.remove('dim'), 700);
-        return;
-      }
-      // brief click animation, then fade page out, then navigate
+      if(!url){ card.classList.add('dim'); setTimeout(()=>card.classList.remove('dim'), 700); return; }
       card.classList.add('firing');
       try{
         clickAudio.currentTime = 0;
@@ -611,6 +905,13 @@
       setTimeout(()=>{ window.location.href = url; }, 1050);
     });
   });
+  function flashCard(card){
+    try{
+      clickAudio.currentTime = 0;
+      clickAudio.volume = 0.6;
+      const p = clickAudio.play(); if(p && p.catch) p.catch(()=>{});
+    }catch(e){}
+  }
 
   // ---------- rain canvas ----------
   const canvas = $('rain-canvas');
